@@ -20,3 +20,8 @@ Why else, but to learn!  I also was struck by the uniqueness of the FTXUI librar
 
 There seems to be a bit of a focus on the GUI nowadays, so I wanted something more minimal, and hopefully this will be a bit more portable
 across platforms because of that.
+
+## Build Instructions
+
+Follow the FTXUI build instructions, using CMake.
+Use qmake for **this** project.  I used QtCreator to generate and build the project, so for those who just want a GUI for development (the horror!  :D  ) I suggest using that.
