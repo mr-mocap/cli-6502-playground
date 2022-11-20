@@ -7,6 +7,3 @@ INCLUDEPATH += $$FTXUIDIR/include
 # necessary for other platforms.
 unix: LIBS += -L$$FTXUIDIR/build -lftxui-component -lftxui-dom -lftxui-screen
 win32: LIBS += -L$$FTXUIDIR/build/RelWithDebInfo -lftxui-component -lftxui-dom -lftxui-screen
-
-message($$FTXUIDIR)
-message($$LIBS)
