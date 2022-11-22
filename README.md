@@ -29,6 +29,8 @@ Use qmake for **this** project.  I used QtCreator to generate and build the proj
 
 You should notice that one of the pushbuttons along the bottom is highlighted.  This is the currently active one.  Pressing the Enter key will activate it (perform the displayed function).  You can use the arrow keys to move the selection around and change the currently focused item.  You can even move it to the other windows.
 
+Pressing Esc will quit the program.
+
 ### The Different Windows
 
 #### Memory Page
