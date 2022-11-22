@@ -6,4 +6,9 @@ INCLUDEPATH += $$FTXUIDIR/include
 # Please note that this was build on Windows, so some adjustment will be
 # necessary for other platforms.
 unix: LIBS += -L$$FTXUIDIR/build -lftxui-component -lftxui-dom -lftxui-screen
-win32: LIBS += -L$$FTXUIDIR/build/RelWithDebInfo -lftxui-component -lftxui-dom -lftxui-screen
+win32: CONFIG(Release) {
+LIBS += -L$$FTXUIDIR/build/Release -lftxui-component -lftxui-dom -lftxui-screen
+}
+win32: CONFIG(Debug) {
+LIBS += -L$$FTXUIDIR/build/Debug -lftxui-component -lftxui-dom -lftxui-screen
+}
