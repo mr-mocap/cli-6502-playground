@@ -80,17 +80,26 @@ Element RegisterView::generateView() const
                             text("X: "),
                             text("Y: "),
                             text("SP: "),
-                            text("PC: ")
+                            text("PC: "),
+                            text("STATUS: ")
                             }),
                       vbox({
                             hbox({ _accumulator_input->Render() | size(WIDTH, EQUAL, 2), filler() }),
                             hbox({ _x_input->Render() | size(WIDTH, EQUAL, 2), filler() }),
                             hbox({ _y_input->Render() | size(WIDTH, EQUAL, 2), filler() }),
                             hbox({ _stack_pointer_input->Render() | size(WIDTH, EQUAL, 2), filler() }),
-                            hbox({ _program_counter_input->Render() | size(WIDTH, EQUAL, 4), filler() })
+                            hbox({ _program_counter_input->Render() | size(WIDTH, EQUAL, 4), filler() }),
+                            hbox({ text("N"), filler(),
+                                   text("V"), filler(),
+                                   text("-"), filler(),
+                                   text("B"), filler(),
+                                   text("D"), filler(),
+                                   text("I"), filler(),
+                                   text("Z"), filler(),
+                                   text("C") }) | size(WIDTH, EQUAL , 8 + 7)
                           })
                   }) ) |
-           size(WIDTH, GREATER_THAN, strlen("Registers") + 1) | size(HEIGHT, EQUAL, 5 + 2);
+           size(WIDTH, GREATER_THAN, strlen("Registers") + 1) | size(HEIGHT, EQUAL, 6 + 2);
 }
 
 void RegisterView::disconnectModelSignals(olc6502 *m)
