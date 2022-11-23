@@ -2,9 +2,12 @@
 #include "ftxui/dom/node.hpp"
 #include "ftxui/dom/elements.hpp"
 #include "ftxui/component/component.hpp"
+#include "io.hpp"
 #include <QTimer>
 #include <cstdlib>
 #include <functional>
+#include <QBuffer>
+#include <QByteArray>
 
 using namespace std;
 using namespace ftxui;
@@ -149,11 +152,6 @@ void CLIPlaygroundApplication::simulationThread()
 void CLIPlaygroundApplication::updateTimeSlice()
 {
     using namespace std::chrono_literals;
-
-#if 0
-    if ( !_simulation_running )
-        return;
-#endif
 
     auto start_time = std::chrono::steady_clock::now();
     auto frame_time = 16ms;
