@@ -101,6 +101,8 @@ protected:
 
 void Disassembly::_memoryChanged(IBusDevice::addressType address, uint8_t data)
 {
+    Q_UNUSED(data)
+
     if ( _isInDisassembly(address) )
         _generateDisassembly();
 }
