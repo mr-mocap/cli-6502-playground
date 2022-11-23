@@ -177,6 +177,7 @@ void RegisterView::onPCChanged(uint16_t new_value)
 
 void RegisterView::onStatusChanged(uint8_t new_value)
 {
+    Q_UNUSED(new_value)
 }
 
 bool RegisterView::onEvent(Event event)
