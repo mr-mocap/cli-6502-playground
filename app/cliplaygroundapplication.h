@@ -54,7 +54,8 @@ protected:
     int               _program_counter = 0;
     bool              _simulation_running = false;
     int               _selected_ui_rate = 3;
-    std::map<std::string, int> _ui_update_rates{ { "10 Hz", 10 },
+    std::map<std::string, int> _ui_update_rates{ { " 5 Hz",  5 },
+                                                 { "10 Hz", 10 },
                                                  { "20 Hz", 20 },
                                                  { "30 Hz", 30 },
                                                  { "40 Hz", 40 },
