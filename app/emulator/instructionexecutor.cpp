@@ -317,6 +317,13 @@ void InstructionExecutor::reset()
 
     // Reset takes time
     _cycles = 8;
+
+    _a_changed(registers().a);
+    _x_changed(registers().x);
+    _y_changed(registers().y);
+    _stack_pointer_changed(registers().stack_pointer);
+    _status_changed(registers().status);
+    _program_counter_changed(registers().program_counter);
 }
 
 void InstructionExecutor::irq()
