@@ -18,7 +18,7 @@ void ToHexString(uint8_t new_value, std::string &representation)
 {
     char buffer[3];
 
-    snprintf(buffer, sizeof(buffer), "%0.2X", new_value);
+    snprintf(buffer, sizeof(buffer), "%02X", new_value);
     representation.assign( buffer, sizeof(buffer) - 1 );
 }
 
@@ -26,7 +26,7 @@ void ToHexString(uint16_t new_value, std::string &representation)
 {
     char buffer[5];
 
-    snprintf(buffer, sizeof(buffer), "%0.4X", new_value);
+    snprintf(buffer, sizeof(buffer), "%04X", new_value);
     representation.assign( buffer, sizeof(buffer) - 1 );
 }
 
@@ -81,7 +81,7 @@ Element RegisterView::generateView() const
                             text("Y: "),
                             text("SP: "),
                             text("PC: "),
-                            text("STATUS: ")
+                            text("ST: ")
                             }),
                       vbox({
                             hbox({ _accumulator_input->Render() | size(WIDTH, EQUAL, 2), filler() }),
