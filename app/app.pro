@@ -23,6 +23,7 @@ SOURCES += \
         emulator/rambusdevice.cpp \
         emulator/rambusdeviceview.cpp \
         emulator/registerview.cpp \
+        io.cpp \
         main.cpp
 
 # Default rules for deployment.
@@ -46,6 +47,7 @@ HEADERS += \
     emulator/rambusdevice.hpp \
     emulator/rambusdeviceview.hpp \
     emulator/registers.hpp \
-    emulator/registerview.hpp
+    emulator/registerview.hpp \
+    io.hpp
 
 include(FTXUI.pri)
