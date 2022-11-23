@@ -2,12 +2,14 @@
 #include "ftxui/dom/node.hpp"
 #include "ftxui/dom/elements.hpp"
 #include "ftxui/component/component.hpp"
+#include "ftxui/component/loop.hpp"
 #include "io.hpp"
 #include <QTimer>
 #include <cstdlib>
 #include <functional>
 #include <QBuffer>
 #include <QByteArray>
+#include <chrono>
 
 using namespace std;
 using namespace ftxui;
@@ -26,6 +28,10 @@ CLIPlaygroundApplication::CLIPlaygroundApplication(int &argc, char *argv[])
                          Ref<olc6502::addressType>(computer.cpu()->beginExecutingAtAddressAfterReset()),
                          Ref<olc6502::addressType>(computer.cpu()->beginExecutingAtAddressAfterReset() + static_cast<olc6502::addressType>(0x1000))}
 {
+    _ui_update_rates_dropdown_display_strings.reserve( _ui_update_rates.size() );
+    for (const auto &[key, value] : _ui_update_rates )
+        _ui_update_rates_dropdown_display_strings.push_back( key );
+
     setApplicationName("cli-6502-playground");
     setApplicationVersion("1.0.0");
     _Instance = this;
@@ -61,6 +67,7 @@ void CLIPlaygroundApplication::setup_ui()
     run_button = Button("Run", std::bind(&CLIPlaygroundApplication::onRunButtonPressed, this), ButtonOption::Border());
     pause_button = Button("Pause", std::bind(&CLIPlaygroundApplication::onPauseButtonPressed, this), ButtonOption::Border());
     reset_button = Button("Reset", std::bind(&CLIPlaygroundApplication::onResetButtonPressed, this), ButtonOption::Border());
+    ui_update_rate_dropdown = Dropdown(&_ui_update_rates_dropdown_display_strings, &_selected_ui_rate);
 
     clock_ticks = Renderer(
         [&]()
@@ -95,7 +102,7 @@ void CLIPlaygroundApplication::setup_ui()
     disassembly_component = disassembly( &_disassembly_option );
 
     renderer = Renderer( Container::Vertical({ Container::Horizontal({ memory_page_component, disassembly_component, register_view_component}),
-                                               Container::Horizontal({ step_button, next_instruction_button, run_button, pause_button, reset_button }) }),
+                                               Container::Horizontal({ step_button, next_instruction_button, run_button, pause_button, reset_button, ui_update_rate_dropdown }) }),
                          std::bind( &CLIPlaygroundApplication::generateView, this )
                        );
 }
@@ -117,36 +124,7 @@ void CLIPlaygroundApplication::onRunButtonPressed()
     if ( _simulation_running )
         return;
 
-    if ( !_simulation_control_thread.joinable() )
-    {
-        _simulation_running = true;
-        _updated = false;
-
-        std::thread start_simulation( &CLIPlaygroundApplication::simulationThread, this );
-
-        _simulation_control_thread = std::move(start_simulation);
-    }
-}
-
-void CLIPlaygroundApplication::simulationThread()
-{
-    assert(!_updated);
-
-    while ( _simulation_running )
-    {
-        screen.Post( std::bind(&CLIPlaygroundApplication::updateTimeSlice, this) );
-
-        {
-            std::unique_lock lk{ _simulation_task_mutex };
-
-            _cv.wait( lk, [this] { return _updated; });
-        }
-        {
-            std::unique_lock lk{ _simulation_task_mutex };
-
-            _updated = false;
-        }
-    }
+    _simulation_running = true;
 }
 
 void CLIPlaygroundApplication::updateTimeSlice()
@@ -154,7 +132,8 @@ void CLIPlaygroundApplication::updateTimeSlice()
     using namespace std::chrono_literals;
 
     auto start_time = std::chrono::steady_clock::now();
-    auto frame_time = 16ms;
+    int hz = _ui_update_rates.at( _ui_update_rates_dropdown_display_strings[ _selected_ui_rate ] );
+    std::chrono::milliseconds frame_time{ 1000 / hz };
 
     for (int count = 0; _simulation_running; ++count)
     {
@@ -167,15 +146,6 @@ void CLIPlaygroundApplication::updateTimeSlice()
                 break;
         }
     }
-
-    screen.PostEvent(Event::Custom);
-
-    {
-        std::unique_lock lk{ _simulation_task_mutex };
-
-        _updated = true;
-    }
-    _cv.notify_all();
 }
 
 void CLIPlaygroundApplication::onPauseButtonPressed()
@@ -183,17 +153,7 @@ void CLIPlaygroundApplication::onPauseButtonPressed()
     if ( !_simulation_running )
         return;
 
-    if ( _simulation_control_thread.joinable() )
-    {
-        _simulation_running = false;
-        {
-            std::unique_lock lk{ _simulation_task_mutex };
-
-            _updated = true;
-        }
-        _cv.notify_all();
-        _simulation_control_thread.join();
-    }
+    _simulation_running = false;
 }
 
 void CLIPlaygroundApplication::onResetButtonPressed()
@@ -219,8 +179,24 @@ bool CLIPlaygroundApplication::catchEvent(Event event)
 int CLIPlaygroundApplication::mainLoop()
 {
     step_button->TakeFocus();
+    computer.loadProgram();
+    computer.stepInstruction();
 
-    screen.Loop( CatchEvent(renderer, std::bind(&CLIPlaygroundApplication::catchEvent, this, placeholders::_1) ));
+    Component catch_app_events = CatchEvent(renderer,
+                                            std::bind( &CLIPlaygroundApplication::catchEvent, this, placeholders::_1 ) );
+    Loop loop( &screen, catch_app_events );
+
+    while ( !loop.HasQuitted() )
+    {
+        loop.RunOnce();
+
+        if ( _simulation_running )
+        {
+            // Run one "unit"/time-slice of the simulation
+            updateTimeSlice();
+            screen.PostEvent(Event::Custom);
+        }
+    }
 
     return EXIT_SUCCESS;
 }
@@ -239,7 +215,8 @@ Element CLIPlaygroundApplication::generateView() const
                                                                 next_instruction_button->Render(),
                                                                 run_button->Render(),
                                                                 pause_button->Render(),
-                                                               reset_button->Render() }) | size(HEIGHT, GREATER_THAN, 2)
+                                                                reset_button->Render(),
+                                                                ui_update_rate_dropdown->Render() }) | size(HEIGHT, GREATER_THAN, 2)
                                                            })
                  );
 }

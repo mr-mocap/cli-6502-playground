@@ -10,8 +10,9 @@
 #include "emulator/memorypage.hpp"
 #include "emulator/disassembly.hpp"
 #include <memory>
-#include <thread>
-#include <deque>
+#include <map>
+#include <vector>
+#include <string>
 
 class CLIPlaygroundApplication : public QCoreApplication
 {
@@ -40,6 +41,7 @@ public:
     ftxui::Component             pause_button;
     ftxui::Component             next_instruction_button;
     ftxui::Component             reset_button;
+    ftxui::Component             ui_update_rate_dropdown;
     ftxui::Component             renderer;
     ftxui::ScreenInteractive     screen{ ftxui::ScreenInteractive::Fullscreen() };
 
@@ -50,12 +52,15 @@ protected:
     DisassemblyOption _disassembly_option;
     ftxui::Event      _previous_event;
     int               _program_counter = 0;
-    std::thread       _simulation_control_thread;
-    std::atomic_bool  _simulation_running = false;
-    std::mutex        _simulation_task_mutex;
-    std::condition_variable _cv;
-    bool              _updated = false;
-    int               _simulation_rate_hz = 50000;
+    bool              _simulation_running = false;
+    int               _selected_ui_rate = 3;
+    std::map<std::string, int> _ui_update_rates{ { "10 Hz", 10 },
+                                                 { "20 Hz", 20 },
+                                                 { "30 Hz", 30 },
+                                                 { "40 Hz", 40 },
+                                                 { "60 Hz", 60 },
+                                                 { "72 Hz", 72 } };
+    std::vector<std::string> _ui_update_rates_dropdown_display_strings;
 
     static CLIPlaygroundApplication *_Instance;
 
@@ -66,7 +71,6 @@ protected:
     void onResetButtonPressed();
     bool catchEvent(ftxui::Event event);
     ftxui::Element generateView() const;
-    void simulationThread();
     void updateTimeSlice();
 
 protected slots:
