@@ -46,6 +46,7 @@ protected:
     std::string       _y_representation;
     std::string       _stack_pointer_representation;
     std::string       _program_counter_representation;
+    uint8_t           _status_representation;
     ftxui::Component  _accumulator_input = ftxui::Input(&_a_representation, EmptyRepresentation_Byte);
     ftxui::Component  _x_input = ftxui::Input(&_x_representation, EmptyRepresentation_Byte);
     ftxui::Component  _y_input = ftxui::Input(&_y_representation, EmptyRepresentation_Byte);
@@ -62,6 +63,7 @@ protected:
     void generateContent();
     ftxui::Element generateView() const;
     bool onEvent(ftxui::Event event);
+    ftxui::Color statusBitState(const FLAGS6502 flag) const;
 
 private slots:
     void onAChanged(uint8_t new_value);

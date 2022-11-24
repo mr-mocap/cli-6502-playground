@@ -89,17 +89,22 @@ Element RegisterView::generateView() const
                             hbox({ _y_input->Render() | size(WIDTH, EQUAL, 2), filler() }),
                             hbox({ _stack_pointer_input->Render() | size(WIDTH, EQUAL, 2), filler() }),
                             hbox({ _program_counter_input->Render() | size(WIDTH, EQUAL, 4), filler() }),
-                            hbox({ text("N"), filler(),
-                                   text("V"), filler(),
+                            hbox({ text("N") | color( statusBitState( FLAGS6502::N ) ), filler(),
+                                   text("V") | color( statusBitState( FLAGS6502::V ) ), filler(),
                                    text("-"), filler(),
-                                   text("B"), filler(),
-                                   text("D"), filler(),
-                                   text("I"), filler(),
-                                   text("Z"), filler(),
-                                   text("C") }) | size(WIDTH, EQUAL , 8 + 7)
+                                   text("B") | color( statusBitState( FLAGS6502::B ) ), filler(),
+                                   text("D") | color( statusBitState( FLAGS6502::D ) ), filler(),
+                                   text("I") | color( statusBitState( FLAGS6502::I ) ), filler(),
+                                   text("Z") | color( statusBitState( FLAGS6502::Z ) ), filler(),
+                                   text("C") | color( statusBitState( FLAGS6502::C ) )}) | size(WIDTH, EQUAL , 8 + 7)
                           })
                   }) ) |
            size(WIDTH, GREATER_THAN, strlen("Registers") + 1) | size(HEIGHT, EQUAL, 6 + 2);
+}
+
+ftxui::Color RegisterView::statusBitState(const FLAGS6502 bit) const
+{
+    return (_status_representation & bit) ? Color::Green : Color::Red;
 }
 
 void RegisterView::disconnectModelSignals(olc6502 *m)
@@ -177,7 +182,7 @@ void RegisterView::onPCChanged(uint16_t new_value)
 
 void RegisterView::onStatusChanged(uint8_t new_value)
 {
-    Q_UNUSED(new_value)
+    _status_representation = new_value;
 }
 
 bool RegisterView::onEvent(Event event)
