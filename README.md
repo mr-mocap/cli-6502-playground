@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="./main_screen.png" alt="Demo image"></img>
+</p>
+
 # cli-6502-playground
 
 A project intended for creating a 6502 emulator combined with editing capabilities for playing around with a basic 6502 system.  Uses the **terminal** as the output device.
