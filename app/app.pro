@@ -16,6 +16,7 @@ SOURCES += \
         emulator/disassembly.cpp \
         emulator/disassemblyview.cpp \
         emulator/ibusdevice.cpp \
+        emulator/inputnumber.cpp \
         emulator/instructionexecutor.cpp \
         emulator/memorypage.cpp \
         emulator/olc6502.cpp \
@@ -40,6 +41,7 @@ HEADERS += \
     emulator/disassemblyview.hpp \
     emulator/flags.hpp \
     emulator/ibusdevice.hpp \
+    emulator/inputnumber.hpp \
     emulator/instructionexecutor.hpp \
     emulator/memorypage.hpp \
     emulator/olc6502.hpp \
