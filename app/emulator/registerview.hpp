@@ -65,7 +65,6 @@ protected:
     void connectModelSignals(olc6502 *m);
     void generateContent();
     ftxui::Element generateView() const;
-    bool onEvent(ftxui::Event event);
     ftxui::Color statusBitState(const FLAGS6502 flag) const;
 
 private slots:

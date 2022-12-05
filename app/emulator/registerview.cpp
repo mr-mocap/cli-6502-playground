@@ -100,11 +100,7 @@ Component RegisterView::component()
                                   _stack_pointer_input,
                                   _program_counter_input
     });
-    return Renderer( CatchEvent( _inputs,
-                                 std::bind( &RegisterView::onEvent, this, placeholders::_1 )
-                               ),
-                     std::bind( &RegisterView::generateView, this )
-                   );
+    return Renderer( _inputs, std::bind( &RegisterView::generateView, this ) );
 }
 
 Element RegisterView::generateView() const
@@ -219,30 +215,4 @@ void RegisterView::onPCChanged(uint16_t new_value)
 void RegisterView::onStatusChanged(uint8_t new_value)
 {
     _status_representation = new_value;
-}
-
-bool RegisterView::onEvent(Event event)
-{
-    return false;
-    if ( !model() )
-        return false;
-
-    if ( _inputs->Focused() )
-    {
-        if ( editMode() )
-        {
-            if (event == Event::ArrowLeft)
-                return false;
-            else if (event == Event::ArrowRight)
-                return false;
-        }
-
-        if (event == Event::Return)
-        {
-            toggleEditMode();
-            return true;
-        }
-    }
-
-    return false;
 }
