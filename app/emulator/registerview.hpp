@@ -3,6 +3,7 @@
 
 #include <QObject>
 #include "ftxui/component/component.hpp"          // for Make, Input
+#include "emulator/inputnumber.hpp"
 #include "emulator/olc6502.hpp"
 
 class RegisterView : public QObject
@@ -41,22 +42,24 @@ signals:
 
 protected:
     olc6502          *_model = nullptr;
-    std::string       _a_representation;
-    std::string       _x_representation;
-    std::string       _y_representation;
-    std::string       _stack_pointer_representation;
-    std::string       _program_counter_representation;
+    InputByteOption   _input_a_option;
+    InputByteOption   _input_x_option;
+    InputByteOption   _input_y_option;
+    InputByteOption   _input_stack_pointer_option;
+    InputWordOption   _input_program_counter_option;
+    uint8_t           _a_representation_byte = 0;
+    uint8_t           _x_representation_byte = 0;
+    uint8_t           _y_representation_byte = 0;
+    uint8_t           _stack_pointer_representation_byte = 0;
+    uint16_t          _program_counter_representation_byte = 0;
     uint8_t           _status_representation;
-    ftxui::Component  _accumulator_input = ftxui::Input(&_a_representation, EmptyRepresentation_Byte);
-    ftxui::Component  _x_input = ftxui::Input(&_x_representation, EmptyRepresentation_Byte);
-    ftxui::Component  _y_input = ftxui::Input(&_y_representation, EmptyRepresentation_Byte);
-    ftxui::Component  _stack_pointer_input = ftxui::Input(&_stack_pointer_representation, EmptyRepresentation_Byte);
-    ftxui::Component  _program_counter_input = ftxui::Input(&_program_counter_representation, EmptyRepresentation_Word);
+    ftxui::Component  _accumulator_input = InputByte(&_a_representation_byte, &_input_a_option);
+    ftxui::Component  _x_input = InputByte(&_x_representation_byte, &_input_x_option);
+    ftxui::Component  _y_input = InputByte(&_y_representation_byte, &_input_y_option);
+    ftxui::Component  _stack_pointer_input = InputByte(&_stack_pointer_representation_byte, &_input_stack_pointer_option);
+    ftxui::Component  _program_counter_input = InputWord(&_program_counter_representation_byte, &_input_program_counter_option);
     ftxui::Component  _inputs;
     bool              _edit_mode = false;
-
-    static const std::string EmptyRepresentation_Byte;
-    static const std::string EmptyRepresentation_Word;
 
     void disconnectModelSignals(olc6502 *m);
     void connectModelSignals(olc6502 *m);

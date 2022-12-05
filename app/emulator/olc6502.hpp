@@ -138,6 +138,8 @@ public:
     // The processor loads the 16-bit address contained at this address and then
     // begins executing instructions.
     static constexpr addressType ResetJumpStartAddress = InstructionExecutor::ResetJumpStartAddress;
+    static constexpr addressType NMIAddress = InstructionExecutor::NMIAddress;
+    static constexpr addressType IRQAddress = InstructionExecutor::IRQAddress;
 public slots:
     void clock(); ///< Executes one clock tick
 

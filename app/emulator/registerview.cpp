@@ -8,9 +8,6 @@
 using namespace std;
 using namespace ftxui;
 
-const std::string RegisterView::EmptyRepresentation_Byte{"--"};
-const std::string RegisterView::EmptyRepresentation_Word{"----"};
-
 namespace
 {
 
@@ -35,6 +32,45 @@ RegisterView::RegisterView(QObject *parent)
     :
     QObject(parent)
 {
+    _input_a_option.on_change = [this]()
+    {
+        if ( model() )
+        {
+            _model->registers().a = _a_representation_byte;
+        }
+    };
+
+    _input_x_option.on_change = [this]()
+    {
+        if ( model() )
+        {
+            _model->registers().x = _x_representation_byte;
+        }
+    };
+
+    _input_y_option.on_change = [this]()
+    {
+        if ( model() )
+        {
+            _model->registers().y = _y_representation_byte;
+        }
+    };
+
+    _input_stack_pointer_option.on_change = [this]()
+    {
+        if ( model() )
+        {
+            _model->registers().stack_pointer = _stack_pointer_representation_byte;
+        }
+    };
+
+    _input_program_counter_option.on_change = [this]()
+    {
+        if ( model() )
+        {
+            _model->registers().program_counter = _program_counter_representation_byte;
+        }
+    };
 }
 
 void RegisterView::setModel(olc6502 *new_model)
@@ -84,11 +120,11 @@ Element RegisterView::generateView() const
                             text("ST: ")
                             }),
                       vbox({
-                            hbox({ _accumulator_input->Render() | size(WIDTH, EQUAL, 2), filler() }),
-                            hbox({ _x_input->Render() | size(WIDTH, EQUAL, 2), filler() }),
-                            hbox({ _y_input->Render() | size(WIDTH, EQUAL, 2), filler() }),
-                            hbox({ _stack_pointer_input->Render() | size(WIDTH, EQUAL, 2), filler() }),
-                            hbox({ _program_counter_input->Render() | size(WIDTH, EQUAL, 4), filler() }),
+                            hbox({ _accumulator_input->Render(), filler() }),
+                            hbox({ _x_input->Render(), filler() }),
+                            hbox({ _y_input->Render(), filler() }),
+                            hbox({ _stack_pointer_input->Render(), filler() }),
+                            hbox({ _program_counter_input->Render(), filler() }),
                             hbox({ text("N") | color( statusBitState( FLAGS6502::N ) ), filler(),
                                    text("V") | color( statusBitState( FLAGS6502::V ) ), filler(),
                                    text("-"), filler(),
@@ -157,27 +193,27 @@ void RegisterView::generateContent()
 
 void RegisterView::onAChanged(uint8_t new_value)
 {
-    ToHexString( new_value, _a_representation );
+    _a_representation_byte = new_value;
 }
 
 void RegisterView::onXChanged(uint8_t new_value)
 {
-    ToHexString( new_value, _x_representation );
+    _x_representation_byte = new_value;
 }
 
 void RegisterView::onYChanged(uint8_t new_value)
 {
-    ToHexString( new_value, _y_representation );
+    _y_representation_byte = new_value;
 }
 
 void RegisterView::onStackPointerChanged(uint8_t new_value)
 {
-    ToHexString( new_value, _stack_pointer_representation );
+    _stack_pointer_representation_byte = new_value;
 }
 
 void RegisterView::onPCChanged(uint16_t new_value)
 {
-    ToHexString( new_value, _program_counter_representation );
+    _program_counter_representation_byte = new_value;
 }
 
 void RegisterView::onStatusChanged(uint8_t new_value)
@@ -187,6 +223,7 @@ void RegisterView::onStatusChanged(uint8_t new_value)
 
 bool RegisterView::onEvent(Event event)
 {
+    return false;
     if ( !model() )
         return false;
 
@@ -195,45 +232,9 @@ bool RegisterView::onEvent(Event event)
         if ( editMode() )
         {
             if (event == Event::ArrowLeft)
-            {
-                {
-                    auto child = _inputs->ActiveChild();
-
-                    if ( child == _accumulator_input )
-                        onAChanged( --_model->registers().a );
-                    else if ( child == _x_input )
-                        onXChanged( --_model->registers().x );
-                    else if ( child == _y_input )
-                        onYChanged( --_model->registers().y );
-                    else if ( child == _stack_pointer_input )
-                        onStackPointerChanged( --_model->registers().stack_pointer );
-                    else if ( child == _program_counter_input )
-                        onPCChanged( --_model->registers().program_counter );
-                    else
-                        return false;
-                    return true;
-                }
-            }
+                return false;
             else if (event == Event::ArrowRight)
-            {
-                {
-                    auto child = _inputs->ActiveChild();
-
-                    if ( child == _accumulator_input )
-                        onAChanged( ++_model->registers().a );
-                    else if ( child == _x_input )
-                        onXChanged( ++_model->registers().x );
-                    else if ( child == _y_input )
-                        onYChanged( ++_model->registers().y );
-                    else if ( child == _stack_pointer_input )
-                        onStackPointerChanged( ++_model->registers().stack_pointer );
-                    else if ( child == _program_counter_input )
-                        onPCChanged( ++_model->registers().program_counter );
-                    else
-                        return false;
-                    return true;
-                }
-            }
+                return false;
         }
 
         if (event == Event::Return)

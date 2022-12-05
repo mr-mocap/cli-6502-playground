@@ -4,6 +4,7 @@
 #include <QIODevice>
 #include <optional>
 #include <vector>
+#include <map>
 #include <string_view>
 
 class IOInterface
@@ -12,6 +13,20 @@ public:
     virtual void ReadInputFrom(QIODevice *device) = 0;
 };
 
+
+class IOSimpleHex : public IOInterface
+{
+public:
+    using Bytes = std::vector<uint8_t>;
+
+    // We expect lines of the form: XXXX:( XX)*
+    // A 16-bit hex addres followed by a colon folowed by one or more 2-digit
+    // hex chars (a byte value).
+    void ReadInputFrom(QIODevice *device) override;
+
+protected:
+    std::map<int, Bytes> _data;
+};
 
 class IOSRecord : public IOInterface
 {

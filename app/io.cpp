@@ -1,10 +1,20 @@
 #include "io.hpp"
 #include <iterator>
+#include <algorithm>
+#include <optional>
+#include <cctype>
 
 namespace
 {
 
 static constexpr int CharsPerByte = 2;
+
+static constexpr std::string_view EatWhiteSpace(std::string_view data)
+{
+    while ( !data.empty() && std::isblank( data.front() ) )
+        data.remove_prefix( 1 );
+    return data;
+}
 
 static constexpr inline bool IsDecimalDigit(char digit)
 {
@@ -20,6 +30,9 @@ static int HexDigitsBigEndianToDecimal(std::string_view hex_digits_in_ascii)
 {
     int value = 0;
 
+    if ( hex_digits_in_ascii.empty() )
+        return -1;
+
     for (char iCurrentHexDigit : hex_digits_in_ascii)
     {
         if ( IsDecimalDigit(iCurrentHexDigit) )
@@ -32,6 +45,11 @@ static int HexDigitsBigEndianToDecimal(std::string_view hex_digits_in_ascii)
         value = (value << 4) | (iCurrentHexDigit & 0x0F);
     }
     return value;
+}
+
+static inline bool BeginsWith8BitHexValue(std::string_view data)
+{
+    return ( data.size() >= 2 ) && std::isxdigit( data[0] ) && std::isxdigit( data[1] );
 }
 
 static inline int Read8BitHexValue(std::string_view data)
@@ -69,6 +87,60 @@ static IOSRecord::Bytes ReadData(std::string_view data)
     return rest;
 }
 
+}
+
+static std::optional<std::pair<int, IOSimpleHex::Bytes>> ReadSimpleHexLine(std::string_view data)
+{
+    if ( data.size() < 4 )
+        return std::nullopt;
+
+    std::string_view address = data.substr( 0, 4 );
+    int value = Read16BitHexValue( address );
+
+    // Expect ':'
+    if ( data[4] != ':' )
+        return std::nullopt;
+
+    // Remove the address and ':'
+    data = data.substr( 5 );
+
+    std::vector<uint8_t> bytes;
+
+    bytes.reserve(16); // Expect no more than 16 values (but there could be)
+
+    while ( !(data = EatWhiteSpace( data )).empty() && BeginsWith8BitHexValue( data ) )
+    {
+        int byte_value = Read8BitHexValue( data );
+
+        if ( byte_value == -1 )
+            break;
+
+        bytes.push_back( static_cast<uint8_t>(byte_value) );
+    }
+    return { std::make_pair( value, bytes ) };
+}
+
+void IOSimpleHex::ReadInputFrom(QIODevice *device)
+{
+    // We expect lines of the form: XXXX:( XX)*
+    // A 16-bit address followed by a colon folowed by one or more 2-digit
+    // hex chars (a byte value).
+    _data.clear();
+
+    while (true)
+    {
+        QByteArray line = device->readLine();
+
+        if ( line.size() == 0 )
+            break;
+
+        auto input_data = ReadSimpleHexLine( std::string_view( line.data(), line.size() ) );
+
+        if ( !input_data.has_value() )
+            break;
+
+        _data.insert( std::move( input_data.value() ) );
+    }
 }
 
 void IOSRecord::ReadInputFrom(QIODevice *device)

@@ -35,7 +35,10 @@ public:
     ftxui::Component             register_view_component;
     ftxui::Component             disassembly_component;
     ftxui::Component             clock_ticks;
+    ftxui::Component             system_vectors;
+    ftxui::Component             nmi_vector;
     ftxui::Component             reset_vector;
+    ftxui::Component             irq_vector;
     ftxui::Component             step_button;
     ftxui::Component             run_button;
     ftxui::Component             pause_button;

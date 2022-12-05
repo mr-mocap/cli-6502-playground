@@ -135,7 +135,9 @@ public:
 
     auto disassemble(addressType start, addressType stop) const -> disassemblyType;
 
+    static constexpr uint16_t NMIAddress = 0xFFFA;
     static constexpr uint16_t ResetJumpStartAddress = 0xFFFC;
+    static constexpr uint16_t IRQAddress = 0xFFFE;
 
     InstructionExecutor &operator =(const InstructionExecutor &) = delete;
     InstructionExecutor &operator =(InstructionExecutor &&) = delete;

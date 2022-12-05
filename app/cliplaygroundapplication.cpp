@@ -3,7 +3,7 @@
 #include "ftxui/dom/elements.hpp"
 #include "ftxui/component/component.hpp"
 #include "ftxui/component/loop.hpp"
-#include "io.hpp"
+#include "emulator/inputnumber.hpp"
 #include <QTimer>
 #include <cstdlib>
 #include <functional>
@@ -74,25 +74,44 @@ void CLIPlaygroundApplication::setup_ui()
         {
             char buffer[16];
 
-            snprintf(buffer, sizeof(buffer), "%.6u", computer.cpu()->clockTicks());
+            snprintf(buffer, sizeof(buffer), "%06u", computer.cpu()->clockTicks());
             return window( text("Clock Ticks"), text(buffer) ) | xflex;
-        }
-                         );
+        } );
+    nmi_vector = Renderer(
+        [&]()
+        {
+            char buffer[16];
+
+            snprintf(buffer, sizeof(buffer), "$%04X", computer.ram()->memory()[ olc6502::NMIAddress ] |
+                                                      (computer.ram()->memory()[ olc6502::NMIAddress + 1] << 8) );
+            return hbox( text("NMI: "), filler(), text(buffer) ) | xflex;
+        });
+    irq_vector = Renderer(
+        [&]()
+        {
+            char buffer[16];
+
+            snprintf(buffer, sizeof(buffer), "$%04X", computer.ram()->memory()[ olc6502::IRQAddress ] |
+                                                      (computer.ram()->memory()[ olc6502::IRQAddress + 1] << 8) );
+            return hbox({ text("IRQ: "), filler(), text(buffer) }) | xflex;
+        });
     reset_vector = Renderer(
         [&]()
         {
             char buffer[16];
 
-            snprintf(buffer, sizeof(buffer), "$%.4X", computer.ram()->memory()[ olc6502::ResetJumpStartAddress ] |
+            snprintf(buffer, sizeof(buffer), "$%04X", computer.ram()->memory()[ olc6502::ResetJumpStartAddress ] |
                                                       (computer.ram()->memory()[ olc6502::ResetJumpStartAddress + 1] << 8) );
-            return window( text("Reset Jump Address"), text(buffer) ) | xflex;
+            return hbox({ text("RESET: "), filler(), text(buffer) }) | xflex;
         });
+    system_vectors = Container::Vertical({ nmi_vector, reset_vector, irq_vector });
+
     page_view_component = Renderer(
         [&]()
         {
             char buffer[16];
 
-            snprintf(buffer, sizeof(buffer), "%.2X ", _memorypage_option.model->page());
+            snprintf(buffer, sizeof(buffer), "%02X ", _memorypage_option.model->page());
             Element mpc_element = memory_page_component->Render();
 
             mpc_element->ComputeRequirement();
@@ -101,7 +120,11 @@ void CLIPlaygroundApplication::setup_ui()
 
     disassembly_component = disassembly( &_disassembly_option );
 
-    renderer = Renderer( Container::Vertical({ Container::Horizontal({ memory_page_component, disassembly_component, register_view_component}),
+    renderer = Renderer( Container::Vertical({ Container::Horizontal({ memory_page_component,
+                                                                       disassembly_component,
+                                                                       Container::Vertical( { register_view_component,
+                                                                                              system_vectors } )
+                                                                     }),
                                                Container::Horizontal({ step_button, next_instruction_button, run_button, pause_button, reset_button, ui_update_rate_dropdown }) }),
                          std::bind( &CLIPlaygroundApplication::generateView, this )
                        );
@@ -208,15 +231,15 @@ Element CLIPlaygroundApplication::generateView() const
                                                                   window( text("Disassembly"), disassembly_component->Render() ) | size(HEIGHT, EQUAL, 17),
                                                                   vbox({ register_view_component->Render(),
                                                                          clock_ticks->Render(),
-                                                                         reset_vector->Render()}) }),
+                                                                         window( text("System Vectors"), system_vectors->Render() )}) }),
                                                            filler(),
                                                            separatorDouble(),
-                                                         hbox({ step_button->Render(),
-                                                                next_instruction_button->Render(),
-                                                                run_button->Render(),
-                                                                pause_button->Render(),
-                                                                reset_button->Render(),
-                                                                ui_update_rate_dropdown->Render() }) | size(HEIGHT, GREATER_THAN, 2)
+                                                           hbox({ step_button->Render(),
+                                                                  next_instruction_button->Render(),
+                                                                  run_button->Render(),
+                                                                  pause_button->Render(),
+                                                                  reset_button->Render(),
+                                                                  ui_update_rate_dropdown->Render() }) | size(HEIGHT, GREATER_THAN, 2)
                                                            })
                  );
 }
