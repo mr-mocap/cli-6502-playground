@@ -17,7 +17,7 @@ struct MemoryPageOption
     Ref<int>                     current_byte = -1;
     Ref<int>                     show_pc = -1;
     Ref<Event>                   previous_event;
-    Decorator                    edit_mode_decorator = ftxui::inverted;
+    Decorator                    edit_mode_decorator = ftxui::inverted | ftxui::color(ftxui::Color::DarkOliveGreen1);
 };
 
 Component MemoryPage(Ref<MemoryPageOption> option);

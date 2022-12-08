@@ -9,6 +9,7 @@
 #include "emulator/registerview.hpp"
 #include "emulator/memorypage.hpp"
 #include "emulator/disassembly.hpp"
+#include "emulator/inputnumber.hpp"
 #include <memory>
 #include <map>
 #include <vector>
@@ -30,6 +31,12 @@ public:
     Computer         computer;
     std::shared_ptr<RamBusDeviceView> ram_view;
     std::shared_ptr<RegisterView>     register_view;
+    InputWordOption              input_nmi_option;
+    InputWordOption              input_reset_option;
+    InputWordOption              input_irq_option;
+    uint16_t                     nmi_representation_word = 0;
+    uint16_t                     reset_representation_word = 0;
+    uint16_t                     irq_representation_word = 0;
     ftxui::Component             page_view_component;
     ftxui::Component             memory_page_component;
     ftxui::Component             register_view_component;
@@ -76,6 +83,7 @@ protected:
     bool catchEvent(ftxui::Event event);
     ftxui::Element generateView() const;
     void updateTimeSlice();
+    void memoryChanged(IBusDevice::addressType address, uint8_t data);
 
 protected slots:
 };

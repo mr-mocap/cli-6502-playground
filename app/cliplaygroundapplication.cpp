@@ -14,6 +14,20 @@
 using namespace std;
 using namespace ftxui;
 
+inline uint8_t LowByteOf(uint16_t value)
+{
+    return static_cast<uint8_t>(value & 0X00FF);
+}
+
+inline uint8_t HighByteOf(uint16_t value)
+{
+    return static_cast<uint8_t>(value >> 8);
+}
+
+inline uint16_t MakeWord(uint8_t lo_byte, uint8_t hi_byte)
+{
+    return (hi_byte << 8) |  lo_byte;
+}
 
 CLIPlaygroundApplication *CLIPlaygroundApplication::_Instance = nullptr;
 
@@ -40,6 +54,23 @@ CLIPlaygroundApplication::CLIPlaygroundApplication(int &argc, char *argv[])
                             {
                                 this->_program_counter = static_cast<int>(new_value);
                             });
+    computer.ram()->connect(computer.ram(), &RamBusDevice::memoryChanged,
+                            std::bind( &CLIPlaygroundApplication::memoryChanged, this, std::placeholders::_1, std::placeholders::_2 ));
+    input_nmi_option.on_change = [this]()
+    {
+        computer.ram()->write( olc6502::NMIAddress    , LowByteOf( nmi_representation_word ) );
+        computer.ram()->write( olc6502::NMIAddress + 1, HighByteOf( nmi_representation_word ) );
+    };
+    input_reset_option.on_change = [this]()
+    {
+        computer.ram()->write( olc6502::ResetJumpStartAddress    , LowByteOf( reset_representation_word ) );
+        computer.ram()->write( olc6502::ResetJumpStartAddress + 1, HighByteOf( reset_representation_word ) );
+    };
+    input_irq_option.on_change = [this]()
+    {
+        computer.ram()->write( olc6502::IRQAddress    , LowByteOf( irq_representation_word ) );
+        computer.ram()->write( olc6502::IRQAddress + 1, HighByteOf( irq_representation_word ) );
+    };
 }
 
 CLIPlaygroundApplication::~CLIPlaygroundApplication()
@@ -55,6 +86,13 @@ void CLIPlaygroundApplication::Update()
 
 void CLIPlaygroundApplication::setup_ui()
 {
+    nmi_representation_word = MakeWord( computer.ram()->read( olc6502::NMIAddress, false ),
+                                        computer.ram()->read( olc6502::NMIAddress + 1, false ) );
+    reset_representation_word = MakeWord( computer.ram()->read( olc6502::ResetJumpStartAddress, false ),
+                                          computer.ram()->read( olc6502::ResetJumpStartAddress + 1, false ) );
+    irq_representation_word = MakeWord( computer.ram()->read( olc6502::IRQAddress, false ),
+                                        computer.ram()->read( olc6502::IRQAddress + 1, false ) );
+
     ram_view->setModel( computer.ram() );
     ram_view->setPage(0);
 
@@ -68,6 +106,12 @@ void CLIPlaygroundApplication::setup_ui()
     pause_button = Button("Pause", std::bind(&CLIPlaygroundApplication::onPauseButtonPressed, this), ButtonOption::Border());
     reset_button = Button("Reset", std::bind(&CLIPlaygroundApplication::onResetButtonPressed, this), ButtonOption::Border());
     ui_update_rate_dropdown = Dropdown(&_ui_update_rates_dropdown_display_strings, &_selected_ui_rate);
+    nmi_vector   = InputWord( &nmi_representation_word, &input_nmi_option );
+    reset_vector = InputWord( &reset_representation_word, &input_reset_option );
+    irq_vector   = InputWord( &irq_representation_word, &input_irq_option );
+
+
+
 
     clock_ticks = Renderer(
         [&]()
@@ -77,33 +121,6 @@ void CLIPlaygroundApplication::setup_ui()
             snprintf(buffer, sizeof(buffer), "%06u", computer.cpu()->clockTicks());
             return window( text("Clock Ticks"), text(buffer) ) | xflex;
         } );
-    nmi_vector = Renderer(
-        [&]()
-        {
-            char buffer[16];
-
-            snprintf(buffer, sizeof(buffer), "$%04X", computer.ram()->memory()[ olc6502::NMIAddress ] |
-                                                      (computer.ram()->memory()[ olc6502::NMIAddress + 1] << 8) );
-            return hbox( text("NMI: "), filler(), text(buffer) ) | xflex;
-        });
-    irq_vector = Renderer(
-        [&]()
-        {
-            char buffer[16];
-
-            snprintf(buffer, sizeof(buffer), "$%04X", computer.ram()->memory()[ olc6502::IRQAddress ] |
-                                                      (computer.ram()->memory()[ olc6502::IRQAddress + 1] << 8) );
-            return hbox({ text("IRQ: "), filler(), text(buffer) }) | xflex;
-        });
-    reset_vector = Renderer(
-        [&]()
-        {
-            char buffer[16];
-
-            snprintf(buffer, sizeof(buffer), "$%04X", computer.ram()->memory()[ olc6502::ResetJumpStartAddress ] |
-                                                      (computer.ram()->memory()[ olc6502::ResetJumpStartAddress + 1] << 8) );
-            return hbox({ text("RESET: "), filler(), text(buffer) }) | xflex;
-        });
     system_vectors = Container::Vertical({ nmi_vector, reset_vector, irq_vector });
 
     page_view_component = Renderer(
@@ -231,7 +248,11 @@ Element CLIPlaygroundApplication::generateView() const
                                                                   window( text("Disassembly"), disassembly_component->Render() ) | size(HEIGHT, EQUAL, 17),
                                                                   vbox({ register_view_component->Render(),
                                                                          clock_ticks->Render(),
-                                                                         window( text("System Vectors"), system_vectors->Render() )}) }),
+                                                                     window( text("System Vectors"),
+                                                                            vbox({ hbox({ text("NMI:   "), nmi_vector->Render() }),
+                                                                                   hbox({ text("RESET: "), reset_vector->Render() }),
+                                                                                   hbox({ text("IRQ:   "), irq_vector->Render() })
+                                                                                 }) )}) }),
                                                            filler(),
                                                            separatorDouble(),
                                                            hbox({ step_button->Render(),
@@ -242,4 +263,32 @@ Element CLIPlaygroundApplication::generateView() const
                                                                   ui_update_rate_dropdown->Render() }) | size(HEIGHT, GREATER_THAN, 2)
                                                            })
                  );
+}
+
+void CLIPlaygroundApplication::memoryChanged(IBusDevice::addressType address, uint8_t data)
+{
+    if ( address == olc6502::ResetJumpStartAddress )
+    {
+        reset_representation_word = MakeWord( data, HighByteOf( reset_representation_word ) );
+    }
+    else if ( address == olc6502::ResetJumpStartAddress + 1 )
+    {
+        reset_representation_word = MakeWord( LowByteOf( reset_representation_word ), data );
+    }
+    else if ( address == olc6502::NMIAddress )
+    {
+        nmi_representation_word = MakeWord( data, HighByteOf( nmi_representation_word ) );
+    }
+    else if ( address == olc6502::NMIAddress + 1 )
+    {
+        nmi_representation_word = MakeWord( LowByteOf( nmi_representation_word ), data );
+    }
+    else if ( address == olc6502::IRQAddress )
+    {
+        irq_representation_word = MakeWord( data, HighByteOf( irq_representation_word ) );
+    }
+    else if ( address == olc6502::IRQAddress + 1 )
+    {
+        irq_representation_word = MakeWord( LowByteOf( irq_representation_word ), data );
+    }
 }
