@@ -2,6 +2,8 @@
 #include <QTimer>
 #include <sstream>
 
+#include "io.hpp"
+
 
 Computer::Computer(QObject *parent) : QObject(parent)
 {
@@ -52,45 +54,23 @@ void Computer::timerTimeout()
     stepClock();
 }
 
-void Computer::loadProgram()
+void Computer::loadProgram(QString path)
 {
-    // Load Program (assembled at https://www.masswerk.at/6502/assembler.html)
-    /*
-       *=$8000
-       LDX #10
-       STX $0000
-       LDX #3
-       STX $0001
-       LDY $0000
-       LDA #0
-       CLC
-       loop
-       ADC $0001
-       DEY
-       BNE loop
-       STA $0002
-       NOP
-       NOP
-       NOP
-   */
+    std::optional<MemoryBlock> input = ReadFromFile( path );
 
-    // Convert hex string into bytes for RAM
-    std::stringstream ss;
-
-    ss << "A2 0A 8E 00 00 A2 03 8E 01 00 AC 00 00 A9 00 18 6D 01 00 88 D0 FA 8D 02 00 EA EA EA";
-
-    for (uint16_t nOffset = 0x8000; !ss.eof(); ++nOffset)
+    if ( input )
     {
-        std::string b;
+        const int start         = input.value().first;
+              int start_address = input.value().first;
 
-        ss >> b;
-        _memory.write(nOffset, (uint8_t)std::stoul(b, nullptr, 16));
+        for ( uint8_t iCurrentByte : input.value().second )
+            _memory.write( start_address++, iCurrentByte );
+
+        // Set Reset Vector
+        _memory.write(0xFFFC, start & 0xFF);
+        _memory.write(0xFFFD, start >> 8);
+
+        // Reset
+        _cpu.reset();
     }
-
-    // Set Reset Vector
-    _memory.write(0xFFFC, 0x00);
-    _memory.write(0xFFFD, 0x80);
-
-    // Reset
-    _cpu.reset();
 }

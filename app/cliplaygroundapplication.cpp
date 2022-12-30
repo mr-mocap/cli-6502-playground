@@ -219,7 +219,9 @@ bool CLIPlaygroundApplication::catchEvent(Event event)
 int CLIPlaygroundApplication::mainLoop()
 {
     step_button->TakeFocus();
-    computer.loadProgram();
+#if 0
+    computer.loadProgram( <Exact path to a .PRG file> );
+#endif
     computer.stepInstruction();
 
     Component catch_app_events = CatchEvent(renderer,

@@ -17,7 +17,7 @@ class Computer : public QObject
 public:
     explicit Computer(QObject *parent = nullptr);
 
-    void loadProgram();
+    void loadProgram(QString path);
 
 public slots:
     void startClock();

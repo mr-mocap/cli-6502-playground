@@ -3,7 +3,80 @@
 #include <algorithm>
 #include <optional>
 #include <cctype>
+#include <utility>
+#include <QFile>
 
+using ReadMemoryBlockFunctionPtr_t =  std::optional<MemoryBlock> (*)(QIODevice *);
+
+#if 0
+class IOInterface
+{
+public:
+    virtual void ReadInputFrom(QIODevice *device) = 0;
+};
+
+
+class IOPrg : public IOInterface
+{
+public:
+    using Bytes = std::vector<uint8_t>;
+
+    void ReadInputFrom(QIODevice *device) override;
+
+protected:
+    std::map<int, Bytes> _data;
+};
+
+class IOSimpleHex : public IOInterface
+{
+public:
+    using Bytes = std::vector<uint8_t>;
+
+    // We expect lines of the form: XXXX:( XX)*
+    // A 16-bit hex addres followed by a colon folowed by one or more 2-digit
+    // hex chars (a byte value).
+    void ReadInputFrom(QIODevice *device) override;
+
+protected:
+    std::map<int, Bytes> _data;
+};
+
+class IOSRecord : public IOInterface
+{
+public:
+    using Bytes = std::vector<char>;
+
+    struct Record
+    {
+        Record(int a, const Bytes &b, int c) : address(a), data(b), checksum(c) { }
+
+        int   address = 0;
+        Bytes data;
+        int   checksum = 0;
+    };
+
+    using Records = std::vector<Record>;
+    using RecordData = std::optional<Record>;
+
+    void ReadInputFrom(QIODevice *device) override;
+
+    std::optional<Records> records;
+protected:
+    bool readRecordStart(const std::string_view data);
+    int  readRecordType(const std::string_view data);
+    int  readRecordByteCount(std::string_view data);
+
+    RecordData readRecordType0(std::string_view data);
+    RecordData readRecordType1(std::string_view data);
+    RecordData readRecordType2(std::string_view data);
+    RecordData readRecordType3(std::string_view data);
+    // Type 4 is reserved
+    RecordData readRecordType5(std::string_view data);
+    RecordData readRecordType6(std::string_view data);
+    RecordData readRecordType7(std::string_view data);
+    RecordData readRecordType8(std::string_view data);
+    RecordData readRecordType9(std::string_view data);
+};
 namespace
 {
 
@@ -427,4 +500,81 @@ IOSRecord::RecordData IOSRecord::readRecordType9(std::string_view data)
     }
 
     return {};
+}
+
+void IOPrg::ReadInputFrom(QIODevice *device)
+{
+    // ASSUME: 16-bit little-endian address first, with the rest of the bytes
+    //         following.
+    _data.clear();
+
+    QByteArray temp_data = device->read(2);
+
+    if ( temp_data.size() != 2 )
+        return;
+
+    bool ok = false;
+    int  a = temp_data.toInt( &ok );
+
+    if ( !ok )
+        return;
+
+    temp_data = device->readAll();
+
+    _data[a] = Bytes{ temp_data.begin(), temp_data.end() };
+}
+#endif
+
+namespace
+{
+
+QString SuffixOf(const QString &s)
+{
+    auto position = s.lastIndexOf('.');
+
+    return (position == -1 ) ? QString() : s.mid( position );
+}
+
+std::optional<MemoryBlock> ReturnOnlyError(QIODevice *device)
+{
+    return {};
+}
+
+std::optional<MemoryBlock> ReadPRGFrom(QIODevice *device)
+{
+    QByteArray temp_data = device->read(2);
+
+    if ( temp_data.size() != 2 )
+        return {};
+
+    int address = temp_data[0] | (temp_data[1] << 8);
+
+    temp_data = device->readAll();
+
+    if ( temp_data.isEmpty() )
+        return {};
+
+    return MemoryBlock{ address, Bytes( temp_data.begin(), temp_data.end() ) };
+}
+
+std::map<QString, ReadMemoryBlockFunctionPtr_t> FileTypeTable{ { ".prg", &ReadPRGFrom } };
+
+}
+
+std::optional<MemoryBlock> ReadFromFile(QString filename)
+{
+    if ( !QFile::exists( filename ) )
+        return {};
+
+    QFile file{ filename };
+
+    if ( !file.open( QIODevice::ReadOnly ) )
+        return {};
+
+    QString suffix = SuffixOf( filename );
+
+    if ( FileTypeTable.count( suffix ) )
+        return (FileTypeTable[ suffix ])( &file );
+    else
+        return ReturnOnlyError( &file );
 }
