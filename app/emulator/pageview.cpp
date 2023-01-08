@@ -117,7 +117,7 @@ void PageView::drawMemoryValues(int line, Screen &screen)
 {
     char buffer[DataPart + 1];
 
-    snprintf(buffer, sizeof(buffer), "%.2X %.2x %.2X %.2X %.2X %.2X %.2X %.2X %.2X %.2X %.2X %.2X %.2X %.2X %.2X %.2X",
+    snprintf(buffer, sizeof(buffer), "%02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X",
              memoryAt(line, 0x0),
              memoryAt(line, 0x1),
              memoryAt(line, 0x2),
