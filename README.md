@@ -78,3 +78,25 @@ Displays the number of clock cycles executed.  Pressing the Step button increase
 #### Reset Jump Address
 
 Displays the value contained in the processor's hardware reset jump vector (located at $FFFC & $FFFD).  This is where the execution will start after a reset is performed (by pressing the Reset button).
+
+## How do I load programs into memory?
+
+Unfortunately, at the moment you have to modify the `CLIPlaygroundApplication::mainLoop()` method to load a `.prg` file.  Just give the path to the file to the `loadProgram()` method.
+
+Currently, the processor's reset jump vector will be set to the load address after the file is loaded, thus making it easy to just load a program and begin executing.
+
+### What is a `.prg` file?
+
+A `.prg` in this case is typically used by 6502 emulators (Commodore 64, for example) to hold executable machine code.
+
+#### The Format
+
+The first 2 bytes are the little-endian representation of the load address.
+
+The following bytes will be loaded into the load address.
+
+### How do I create a `.prg` file?
+
+Well, I use Visual Studio Code along with the <a href="https://marketplace.visualstudio.com/items?itemName=datatrash.mos" target="_blank">mos plugin</a> to create them.
+
+I've been typing in some old routines and creating a jump table as a way to just try them out, and I may end up including that in this repo eventually.
