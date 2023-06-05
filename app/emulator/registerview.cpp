@@ -36,7 +36,7 @@ RegisterView::RegisterView(QObject *parent)
     {
         if ( model() )
         {
-            _model->registers().a = _a_representation_byte;
+            _model->registers().a = *_input_a_option.data;
         }
     };
 
@@ -44,7 +44,7 @@ RegisterView::RegisterView(QObject *parent)
     {
         if ( model() )
         {
-            _model->registers().x = _x_representation_byte;
+            _model->registers().x = *_input_x_option.data;
         }
     };
 
@@ -52,7 +52,7 @@ RegisterView::RegisterView(QObject *parent)
     {
         if ( model() )
         {
-            _model->registers().y = _y_representation_byte;
+            _model->registers().y = *_input_y_option.data;
         }
     };
 
@@ -60,7 +60,7 @@ RegisterView::RegisterView(QObject *parent)
     {
         if ( model() )
         {
-            _model->registers().stack_pointer = _stack_pointer_representation_byte;
+            _model->registers().stack_pointer = *_input_stack_pointer_option.data;
         }
     };
 
@@ -189,22 +189,22 @@ void RegisterView::generateContent()
 
 void RegisterView::onAChanged(uint8_t new_value)
 {
-    _a_representation_byte = new_value;
+    *_input_a_option.data = new_value;
 }
 
 void RegisterView::onXChanged(uint8_t new_value)
 {
-    _x_representation_byte = new_value;
+    *_input_x_option.data = new_value;
 }
 
 void RegisterView::onYChanged(uint8_t new_value)
 {
-    _y_representation_byte = new_value;
+    *_input_y_option.data = new_value;
 }
 
 void RegisterView::onStackPointerChanged(uint8_t new_value)
 {
-    _stack_pointer_representation_byte = new_value;
+    *_input_stack_pointer_option.data = new_value;
 }
 
 void RegisterView::onPCChanged(uint16_t new_value)
