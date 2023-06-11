@@ -4,10 +4,17 @@
 #include <cmath>
 #include <numeric>
 
-
 #include "ftxui/dom/elements.hpp"
 
 using namespace ftxui;
+
+struct BaseProperties {
+  InputByteOption::Base base;
+  int                   base_representation;
+  int                   max_digits;
+  std::string           base_prefix;
+  static constexpr int  max_value = static_cast<int>(std::numeric_limits<uint8_t>::max());
+};
 
 namespace
 {
@@ -45,6 +52,38 @@ int ChangeDigit(int current_value, int digit_number, int base, int delta, int ma
     return result;
 }
 
+std::string GeneratePrefix(bool show_base, const BaseProperties &properties)
+{
+    if ( show_base )
+        return properties.base_prefix;
+    else
+        return {};
+}
+
+std::string GenerateStringValue(InputByteOption::Base base, uint8_t data)
+{
+    char buffer[16];
+
+    switch (base)
+    {
+    case InputByteOption::Base::Decimal:
+        return std::string( buffer, snprintf(buffer, sizeof buffer, "%03i", data) );
+        break;
+    case InputByteOption::Base::Hexadecimal:
+        return std::string( buffer, snprintf(buffer, sizeof buffer, "%02X", data) );
+        break;
+    case InputByteOption::Base::Octal:
+        return std::string( buffer, snprintf(buffer, sizeof buffer, "%03o", data) );
+        break;
+    case InputByteOption::Base::Binary:
+        return std::bitset<8>(data).to_string();
+        break;
+    default:
+        break;
+    }
+    return { };
+}
+
 }
 
 class InputByteBase : public ComponentBase {
@@ -64,13 +103,6 @@ class InputByteBase : public ComponentBase {
       Event decrement_single_digit_value_event  = Event::ArrowDown;
     };
 
-    struct BaseProperties {
-      InputByteOption::Base base;
-      int                   base_representation;
-      int                   max_digits;
-      static constexpr int  max_value = static_cast<int>(std::numeric_limits<uint8_t>::max());
-    };
-
     InputByteBase(Ref<InputByteOption> option)
          :
          option_(std::move(option))
@@ -83,62 +115,27 @@ class InputByteBase : public ComponentBase {
     // Component implementation:
     Element Render() override
     {
-      char buffer[16];
-      int  number_written = 0;
       bool is_focused = Focused();
-
-      switch (*option_->base)
-      {
-        case InputByteOption::Base::Decimal:
-          // Let's don't show any prefix
-          number_written = snprintf(buffer, sizeof buffer, "%03i", *option_->data);
-          break;
-        case InputByteOption::Base::Hexadecimal:
-          if (*option_->base_prefix)
-            number_written = snprintf(buffer, sizeof buffer, "$%02X", *option_->data);
-          else
-            number_written = snprintf(buffer, sizeof buffer, "%02X", *option_->data);
-          break;
-        case InputByteOption::Base::Octal:
-          if (*option_->base_prefix)
-            number_written = snprintf(buffer, sizeof buffer, "O%03o", *option_->data);
-          else
-            number_written = snprintf(buffer, sizeof buffer, "%03o", *option_->data);
-          break;
-        case InputByteOption::Base::Binary:
-          {
-            std::string s = std::bitset<8>(*option_->data).to_string();
-            char *buf_ptr = buffer;
-
-            if (*option_->base_prefix)
-              *buf_ptr++ = '%';
-
-            s.copy(buf_ptr, std::string::npos);
-            buf_ptr += s.size();
-            *buf_ptr = '\0';
-            number_written = (buf_ptr - buffer);
-          }
-          break;
-        default:
-          break;
-      }
-      auto main_decorator = ftxui::size(HEIGHT, EQUAL, 1) | ftxui::size(ftxui::WIDTH, EQUAL, number_written);
+      std::string v = GenerateStringValue( *option_->base, *option_->data );
+      std::string prefix = GeneratePrefix( *option_->base_prefix, base_properties_[*option_->base] );
+      auto main_decorator = ftxui::size(HEIGHT, EQUAL, 1) |
+                            ftxui::size(ftxui::WIDTH, EQUAL, v.length() + prefix.length() );
       Element element;
 
       if ( *option_->edit_mode )
-          element = color(Color::Green, text( std::string(buffer, number_written ) ));
+          element = hbox( { text( prefix ), color(Color::Green, text( v )) } );
       else if ( *option_->single_digit_edit_mode )
       {
           // Break into 3 parts
-          int     split_point = number_written - *option_->current_digit - 1;
-          Element first_part  = text( std::string(buffer, split_point) ) | color(Color::Yellow);
-          Element cursor_part = text( std::string(buffer + split_point, 1) ) |  bgcolor(Color::White) | color(Color::Red);
-          Element last_part   = text( std::string(buffer + split_point + 1, number_written - split_point - 1) ) | color(Color::Yellow);
+          size_t  split_point = v.length() - *option_->current_digit - 1;
+          Element first_part  = text( v.substr(0, split_point) ) | color( Color::Yellow );
+          Element cursor_part = text( v.substr(split_point, 1) ) |  bgcolor(Color::White) | color(Color::Red);
+          Element last_part   = text( v.substr(split_point + 1, v.length() - split_point - 1) ) | color(Color::Yellow);
 
-          element = hbox( { first_part, cursor_part, last_part } );
+          element = hbox( { text( prefix ), first_part, cursor_part, last_part } );
       }
       else
-          element = text( std::string(buffer, number_written) );
+          element = hbox( { text( prefix ), text( v ) } );
 
       element |= main_decorator;
       element |= reflect(box_);
@@ -283,9 +280,9 @@ class InputByteBase : public ComponentBase {
     KeyMap               keymap_;
     std::map<InputByteOption::Base, BaseProperties> base_properties_{
       {InputByteOption::Base::Decimal,     { InputByteOption::Base::Decimal, 10, 3} },
-      {InputByteOption::Base::Octal,       { InputByteOption::Base::Octal,   8,  3} },
-      {InputByteOption::Base::Hexadecimal, { InputByteOption::Base::Hexadecimal, 16, 2} },
-      {InputByteOption::Base::Binary,      { InputByteOption::Base::Binary,  2,  8} }
+      {InputByteOption::Base::Octal,       { InputByteOption::Base::Octal,   8,  3, "O"} },
+      {InputByteOption::Base::Hexadecimal, { InputByteOption::Base::Hexadecimal, 16, 2, "$"} },
+      {InputByteOption::Base::Binary,      { InputByteOption::Base::Binary,  2,  8, "%"} }
     };
 
     static const Event Space;
