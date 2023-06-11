@@ -1,10 +1,51 @@
 #include "inputnumber.hpp"
 #include <bitset>
 #include <map>
+#include <cmath>
+#include <numeric>
+
 
 #include "ftxui/dom/elements.hpp"
 
 using namespace ftxui;
+
+namespace
+{
+
+int ChangeDigit(int current_value, int digit_number, int base, int delta, int max_value_of_representation)
+{
+    int p = pow(base, digit_number);
+
+    // First, shift the wanted digit to the first position...
+    int shifted_current_value = current_value / p;
+
+    // Now clear all the higher digits...
+    int zeroth_digit_value = shifted_current_value % base;
+
+    // Apply the delta...
+    int new_zeroth_value = zeroth_digit_value + delta;
+
+    // Make the digit wrap within the base...
+    int new_digit = (new_zeroth_value < 0) ? (new_zeroth_value + base) % base
+                                             :
+                                             new_zeroth_value % base;
+
+    // Remove the previous value of the digit and then
+    // replace it with the new one...
+    int result = current_value - (zeroth_digit_value * p) + (new_digit * p);
+
+    if ( result > max_value_of_representation )
+    {
+        // Recalculate
+        int digit_value_of_max_value = (max_value_of_representation / p) % base;
+
+        new_digit = new_digit % (digit_value_of_max_value + 1);
+        result = current_value - (zeroth_digit_value * p) + (new_digit * p);
+    }
+    return result;
+}
+
+}
 
 class InputByteBase : public ComponentBase {
   public:
@@ -25,7 +66,9 @@ class InputByteBase : public ComponentBase {
 
     struct BaseProperties {
       InputByteOption::Base base;
+      int                   base_representation;
       int                   max_digits;
+      static constexpr int  max_value = static_cast<int>(std::numeric_limits<uint8_t>::max());
     };
 
     InputByteBase(Ref<InputByteOption> option)
@@ -86,24 +129,13 @@ class InputByteBase : public ComponentBase {
           element = color(Color::Green, text( std::string(buffer, number_written ) ));
       else if ( *option_->single_digit_edit_mode )
       {
-          if ( *option_->current_digit == 0 )
-          {
-              // Break into only 2 parts
-              Element first_part  = text( std::string(buffer, number_written - 1) ) | color(Color::Yellow);
-              Element cursor_part = text( std::string(buffer + number_written - 1, 1) ) | focusCursorBlockBlinking | bgcolor(Color::White) | color(Color::Red);
+          // Break into 3 parts
+          int     split_point = number_written - *option_->current_digit - 1;
+          Element first_part  = text( std::string(buffer, split_point) ) | color(Color::Yellow);
+          Element cursor_part = text( std::string(buffer + split_point, 1) ) |  bgcolor(Color::White) | color(Color::Red);
+          Element last_part   = text( std::string(buffer + split_point + 1, number_written - split_point - 1) ) | color(Color::Yellow);
 
-              element = hbox( { first_part, cursor_part } );
-          }
-          else
-          {
-              // Break into 3 parts
-              int     split_point = number_written - *option_->current_digit;
-              Element first_part  = text( std::string(buffer, split_point - 1) ) | color(Color::Yellow);
-              Element cursor_part = text( std::string(buffer + split_point, 1) ) | focusCursorBlockBlinking | bgcolor(Color::White) | color(Color::Red);
-              Element last_part   = text( std::string(buffer + split_point + 1, number_written - split_point) ) | color(Color::Yellow);
-
-              element = hbox( { first_part, cursor_part, last_part } );
-          }
+          element = hbox( { first_part, cursor_part, last_part } );
       }
       else
           element = text( std::string(buffer, number_written) );
@@ -221,9 +253,11 @@ class InputByteBase : public ComponentBase {
         }
         else if (event == keymap_.increment_single_digit_value_event)
         {
+            *option_->data = ChangeDigit( *option_->data, *option_->current_digit, base_properties_[*option_->base].base_representation, 1, base_properties_[*option_->base].max_value);
         }
         else if (event == keymap_.decrement_single_digit_value_event)
         {
+            *option_->data = ChangeDigit( *option_->data, *option_->current_digit, base_properties_[*option_->base].base_representation, -1, base_properties_[*option_->base].max_value);
         }
 
         return true;
@@ -233,7 +267,7 @@ class InputByteBase : public ComponentBase {
 
     int  NextDigit(int digit_number)
     {
-        return (digit_number == base_properties_[*option_->base].max_digits) ? 0 : digit_number + 1;
+        return (digit_number == base_properties_[*option_->base].max_digits - 1) ? 0 : digit_number + 1;
     }
 
     int  PreviousDigit(int digit_number)
@@ -248,10 +282,10 @@ class InputByteBase : public ComponentBase {
     Ref<InputByteOption> option_;
     KeyMap               keymap_;
     std::map<InputByteOption::Base, BaseProperties> base_properties_{
-      {InputByteOption::Base::Decimal,     { InputByteOption::Base::Decimal, 3} },
-      {InputByteOption::Base::Octal,       { InputByteOption::Base::Octal,   3} },
-      {InputByteOption::Base::Hexadecimal, { InputByteOption::Base::Hexadecimal, 2} },
-      {InputByteOption::Base::Binary,      { InputByteOption::Base::Binary,  8} }
+      {InputByteOption::Base::Decimal,     { InputByteOption::Base::Decimal, 10, 3} },
+      {InputByteOption::Base::Octal,       { InputByteOption::Base::Octal,   8,  3} },
+      {InputByteOption::Base::Hexadecimal, { InputByteOption::Base::Hexadecimal, 16, 2} },
+      {InputByteOption::Base::Binary,      { InputByteOption::Base::Binary,  2,  8} }
     };
 
     static const Event Space;
