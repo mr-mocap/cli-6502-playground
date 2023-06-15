@@ -34,9 +34,6 @@ public:
     InputWordOption              input_nmi_option;
     InputWordOption              input_reset_option;
     InputWordOption              input_irq_option;
-    uint16_t                     nmi_representation_word = 0;
-    uint16_t                     reset_representation_word = 0;
-    uint16_t                     irq_representation_word = 0;
     ftxui::Component             page_view_component;
     ftxui::Component             memory_page_component;
     ftxui::Component             register_view_component;

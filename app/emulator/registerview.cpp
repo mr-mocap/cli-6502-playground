@@ -68,7 +68,7 @@ RegisterView::RegisterView(QObject *parent)
     {
         if ( model() )
         {
-            _model->registers().program_counter = _program_counter_representation_byte;
+            _model->registers().program_counter = *_input_program_counter_option.data;
         }
     };
 }
@@ -209,7 +209,7 @@ void RegisterView::onStackPointerChanged(uint8_t new_value)
 
 void RegisterView::onPCChanged(uint16_t new_value)
 {
-    _program_counter_representation_byte = new_value;
+    *_input_program_counter_option.data = new_value;
 }
 
 void RegisterView::onStatusChanged(uint8_t new_value)

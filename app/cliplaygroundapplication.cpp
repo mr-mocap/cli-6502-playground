@@ -58,18 +58,18 @@ CLIPlaygroundApplication::CLIPlaygroundApplication(int &argc, char *argv[])
                             std::bind( &CLIPlaygroundApplication::memoryChanged, this, std::placeholders::_1, std::placeholders::_2 ));
     input_nmi_option.on_change = [this]()
     {
-        computer.ram()->write( olc6502::NMIAddress    , LowByteOf( nmi_representation_word ) );
-        computer.ram()->write( olc6502::NMIAddress + 1, HighByteOf( nmi_representation_word ) );
+        computer.ram()->write( olc6502::NMIAddress    , LowByteOf( *input_nmi_option.data ) );
+        computer.ram()->write( olc6502::NMIAddress + 1, HighByteOf( *input_nmi_option.data ) );
     };
     input_reset_option.on_change = [this]()
     {
-        computer.ram()->write( olc6502::ResetJumpStartAddress    , LowByteOf( reset_representation_word ) );
-        computer.ram()->write( olc6502::ResetJumpStartAddress + 1, HighByteOf( reset_representation_word ) );
+        computer.ram()->write( olc6502::ResetJumpStartAddress    , LowByteOf( *input_reset_option.data ) );
+        computer.ram()->write( olc6502::ResetJumpStartAddress + 1, HighByteOf( *input_reset_option.data ) );
     };
     input_irq_option.on_change = [this]()
     {
-        computer.ram()->write( olc6502::IRQAddress    , LowByteOf( irq_representation_word ) );
-        computer.ram()->write( olc6502::IRQAddress + 1, HighByteOf( irq_representation_word ) );
+        computer.ram()->write( olc6502::IRQAddress    , LowByteOf( *input_irq_option.data ) );
+        computer.ram()->write( olc6502::IRQAddress + 1, HighByteOf( *input_irq_option.data ) );
     };
 }
 
@@ -86,11 +86,11 @@ void CLIPlaygroundApplication::Update()
 
 void CLIPlaygroundApplication::setup_ui()
 {
-    nmi_representation_word = MakeWord( computer.ram()->read( olc6502::NMIAddress, false ),
+    *input_nmi_option.data = MakeWord( computer.ram()->read( olc6502::NMIAddress, false ),
                                         computer.ram()->read( olc6502::NMIAddress + 1, false ) );
-    reset_representation_word = MakeWord( computer.ram()->read( olc6502::ResetJumpStartAddress, false ),
+    *input_reset_option.data = MakeWord( computer.ram()->read( olc6502::ResetJumpStartAddress, false ),
                                           computer.ram()->read( olc6502::ResetJumpStartAddress + 1, false ) );
-    irq_representation_word = MakeWord( computer.ram()->read( olc6502::IRQAddress, false ),
+    *input_irq_option.data = MakeWord( computer.ram()->read( olc6502::IRQAddress, false ),
                                         computer.ram()->read( olc6502::IRQAddress + 1, false ) );
 
     ram_view->setModel( computer.ram() );
@@ -106,9 +106,9 @@ void CLIPlaygroundApplication::setup_ui()
     pause_button = Button("Pause", std::bind(&CLIPlaygroundApplication::onPauseButtonPressed, this), ButtonOption::Border());
     reset_button = Button("Reset", std::bind(&CLIPlaygroundApplication::onResetButtonPressed, this), ButtonOption::Border());
     ui_update_rate_dropdown = Dropdown(&_ui_update_rates_dropdown_display_strings, &_selected_ui_rate);
-    nmi_vector   = InputWord( &nmi_representation_word, &input_nmi_option );
-    reset_vector = InputWord( &reset_representation_word, &input_reset_option );
-    irq_vector   = InputWord( &irq_representation_word, &input_irq_option );
+    nmi_vector   = InputWord( &input_nmi_option );
+    reset_vector = InputWord( &input_reset_option );
+    irq_vector   = InputWord( &input_irq_option );
 
 
 
@@ -271,26 +271,26 @@ void CLIPlaygroundApplication::memoryChanged(IBusDevice::addressType address, ui
 {
     if ( address == olc6502::ResetJumpStartAddress )
     {
-        reset_representation_word = MakeWord( data, HighByteOf( reset_representation_word ) );
+        *input_reset_option.data = MakeWord( data, HighByteOf( *input_reset_option.data ) );
     }
     else if ( address == olc6502::ResetJumpStartAddress + 1 )
     {
-        reset_representation_word = MakeWord( LowByteOf( reset_representation_word ), data );
+        *input_reset_option.data = MakeWord( LowByteOf( *input_reset_option.data ), data );
     }
     else if ( address == olc6502::NMIAddress )
     {
-        nmi_representation_word = MakeWord( data, HighByteOf( nmi_representation_word ) );
+        *input_nmi_option.data = MakeWord( data, HighByteOf( *input_nmi_option.data ) );
     }
     else if ( address == olc6502::NMIAddress + 1 )
     {
-        nmi_representation_word = MakeWord( LowByteOf( nmi_representation_word ), data );
+        *input_nmi_option.data = MakeWord( LowByteOf( *input_nmi_option.data ), data );
     }
     else if ( address == olc6502::IRQAddress )
     {
-        irq_representation_word = MakeWord( data, HighByteOf( irq_representation_word ) );
+        *input_irq_option.data = MakeWord( data, HighByteOf( *input_irq_option.data ) );
     }
     else if ( address == olc6502::IRQAddress + 1 )
     {
-        irq_representation_word = MakeWord( LowByteOf( irq_representation_word ), data );
+        *input_irq_option.data = MakeWord( LowByteOf( *input_irq_option.data ), data );
     }
 }
