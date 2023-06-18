@@ -81,7 +81,7 @@ std::string GenerateStringValue(Base base, int max_digits, int data)
             std::to_chars_result result = std::to_chars( std::begin(buffer),
                                                          std::end(buffer),
                                                          data,
-                                                         static_cast<int>(base));
+                                                         2);
             return { buffer, result.ptr };
         }
         break;
@@ -222,20 +222,20 @@ class InputByteBase : public ComponentBase {
         }
         else if (event == keymap_.decrement_base_event)
         {
-          if (*option_->base == Base::Decimal) // Check if we need to wrap around
-            *option_->base = Base::Binary;
+          if (*option_->base == Base::Binary) // Check if we need to wrap around
+              *option_->base = Base::END;
           else
           {
-            unsigned int value = static_cast<unsigned int>(*option_->base);
+            int value = *option_->base;
 
             *option_->base = static_cast<Base>(value - 1);
           }
         }
         else if (event == keymap_.increment_base_event)
         {
-          unsigned int value = static_cast<int>(*option_->base);
+          int value = static_cast<int>(*option_->base);
 
-          *option_->base = static_cast<Base>((value + 1) % 4);
+          *option_->base = static_cast<Base>((value + 1) % (Base::END + 1));
         }
         else if (event == keymap_.toggle_base_prefix_event)
         {
@@ -422,20 +422,20 @@ private:
         }
         else if (event == keymap_.decrement_base_event)
         {
-          if (*option_->base == Base::Decimal) // Check if we need to wrap around
-            *option_->base = Base::Binary;
+          if (*option_->base == Base::Binary) // Check if we need to wrap around
+            *option_->base = Base::END;
           else
           {
-            unsigned int value = static_cast<unsigned int>(*option_->base);
+            int value = static_cast<int>(*option_->base);
 
             *option_->base = static_cast<Base>(value - 1);
           }
         }
         else if (event == keymap_.increment_base_event)
         {
-          unsigned int value = static_cast<int>(*option_->base);
+          int value = static_cast<int>(*option_->base);
 
-          *option_->base = static_cast<Base>((value + 1) % 4);
+          *option_->base = static_cast<Base>((value + 1) % (Base::END + 1));
         }
         else if (event == keymap_.toggle_base_prefix_event)
         {

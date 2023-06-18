@@ -4,11 +4,12 @@
 #include <ftxui/component/component.hpp>
 #include <functional>
 
-enum class Base {
-    Binary      = 2,
-    Octal       = 8,
-    Decimal     = 10,
-    Hexadecimal = 16
+enum Base {
+    Binary,
+    Octal,
+    Decimal,
+    Hexadecimal,
+    END = Hexadecimal
 };
 
 struct InputByteOption {
