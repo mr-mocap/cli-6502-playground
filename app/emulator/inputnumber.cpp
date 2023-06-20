@@ -19,6 +19,19 @@ namespace
 {
 const Event Space = Event::Character(' ');
 
+const std::map<Base, BaseProperties> BasePropertiesByte {
+    {Base::Decimal,     { Base::Decimal, 10, 3, {}, 255} },
+    {Base::Octal,       { Base::Octal,   8,  3, "O", 255} },
+    {Base::Hexadecimal, { Base::Hexadecimal, 16, 2, "$", 255} },
+    {Base::Binary,      { Base::Binary,  2,  8, "%", 255} }
+};
+
+const std::map<Base, BaseProperties> BasePropertiesWord {
+    {Base::Decimal,     { Base::Decimal, 10, 5, {}, 65535 } },
+    {Base::Octal,       { Base::Octal,   8,  6, "O", 65535 } },
+    {Base::Hexadecimal, { Base::Hexadecimal, 16, 4, "$", 65535 } },
+    {Base::Binary,      { Base::Binary,  2,  16, "%", 65535 } }
+};
 
 int ChangeDigit(int current_value, int digit_number, int base, int delta, int max_value_of_representation)
 {
@@ -91,6 +104,14 @@ std::string GenerateStringValue(Base base, int max_digits, int data)
     return { };
 }
 
+Base NewBaseValue(int current_base_value, int delta)
+{
+    int limit_delta = delta % Base::END; // Wrap around
+    int nonnegative_delta = limit_delta + Base::END; // >= 0
+
+    return Base((current_base_value + nonnegative_delta) % Base::END); // Wrap the sum around
+}
+
 }
 
 class InputByteBase : public ComponentBase {
@@ -123,8 +144,8 @@ class InputByteBase : public ComponentBase {
     Element Render() override
     {
       bool is_focused = Focused();
-      std::string v = GenerateStringValue( *option_->base, base_properties_[*option_->base].max_digits, *option_->data );
-      std::string prefix = GeneratePrefix( *option_->base_prefix, base_properties_[*option_->base] );
+      std::string v = GenerateStringValue( *option_->base, BasePropertiesByte.at(*option_->base).max_digits, *option_->data );
+      std::string prefix = GeneratePrefix( *option_->base_prefix, BasePropertiesByte.at(*option_->base) );
       auto main_decorator = ftxui::size(HEIGHT, EQUAL, 1) |
                             ftxui::size(ftxui::WIDTH, EQUAL, v.length() + prefix.length() );
       Element element;
@@ -139,10 +160,13 @@ class InputByteBase : public ComponentBase {
           Element cursor_part = text( v.substr(split_point, 1) ) |  bgcolor(Color::White) | color(Color::Red);
           Element last_part   = text( v.substr(split_point + 1, v.length() - split_point - 1) ) | color(Color::Yellow);
 
-          element = hbox( { text( prefix ), first_part, cursor_part, last_part } );
+          if ( is_focused )
+              element = hbox( { text( prefix ), hbox( { first_part, cursor_part, last_part } ) | focus } );
+          else
+              element = hbox( { text( prefix ), first_part, cursor_part, last_part } );
       }
       else
-          element = hbox( { text( prefix ), text( v ) } );
+          element = hbox( { text( prefix ), ( is_focused ) ? text( v ) | focus : text(v) } );
 
       element |= main_decorator;
       element |= reflect(box_);
@@ -158,37 +182,37 @@ class InputByteBase : public ComponentBase {
 
     bool OnEvent(Event event) override
     {
-      if (event == Event::Custom) {
+        if (event == Event::Custom) {
+            return false;
+        }
+
+        if ( event.is_mouse() ) {
+            return OnMouseEvent(event);
+        }
+
+        if ( !Focused() )
+            return false;
+
+        if (event == keymap_.edit_mode_toggle_event)
+        {
+            if (!*option_->single_digit_edit_mode)
+            toggleEditMode();
+            return true;
+        }
+
+        if (event == keymap_.single_digit_edit_mode_toggle_event)
+        {
+            if (!*option_->edit_mode)
+                toggleSingleDigitEditMode();
+            return true;
+        }
+
+        if ( *option_->edit_mode )
+            return OnEditModeEvent(event);
+        else if ( *option_->single_digit_edit_mode )
+            return OnSingleDigitEditModeEvent(event);
+
         return false;
-      }
-
-      if ( event.is_mouse() ) {
-        return OnMouseEvent(event);
-      }
-
-      if ( !Focused() )
-          return false;
-
-      if (event == keymap_.edit_mode_toggle_event)
-      {
-          if (!*option_->single_digit_edit_mode)
-              toggleEditMode();
-          return true;
-      }
-
-      if (event == keymap_.single_digit_edit_mode_toggle_event)
-      {
-          if (!*option_->edit_mode)
-              toggleSingleDigitEditMode();
-          return true;
-      }
-
-      if ( *option_->edit_mode )
-          return OnEditModeEvent(event);
-      else if ( *option_->single_digit_edit_mode )
-          return OnSingleDigitEditModeEvent(event);
-
-      return false;
     }
 
   private:
@@ -222,6 +246,7 @@ class InputByteBase : public ComponentBase {
         }
         else if (event == keymap_.decrement_base_event)
         {
+#if 0
           if (*option_->base == Base::Binary) // Check if we need to wrap around
               *option_->base = Base::END;
           else
@@ -230,12 +255,12 @@ class InputByteBase : public ComponentBase {
 
             *option_->base = static_cast<Base>(value - 1);
           }
+#endif
+          *option_->base = NewBaseValue(*option_->base, -1);
         }
         else if (event == keymap_.increment_base_event)
         {
-          int value = static_cast<int>(*option_->base);
-
-          *option_->base = static_cast<Base>((value + 1) % (Base::END + 1));
+          *option_->base = NewBaseValue(*option_->base, 1);
         }
         else if (event == keymap_.toggle_base_prefix_event)
         {
@@ -257,11 +282,11 @@ class InputByteBase : public ComponentBase {
         }
         else if (event == keymap_.increment_single_digit_value_event)
         {
-            *option_->data = ChangeDigit( *option_->data, *option_->current_digit, base_properties_[*option_->base].base_representation, 1, base_properties_[*option_->base].max_value);
+            *option_->data = ChangeDigit( *option_->data, *option_->current_digit, BasePropertiesByte.at(*option_->base).base_representation, 1, BasePropertiesByte.at(*option_->base).max_value);
         }
         else if (event == keymap_.decrement_single_digit_value_event)
         {
-            *option_->data = ChangeDigit( *option_->data, *option_->current_digit, base_properties_[*option_->base].base_representation, -1, base_properties_[*option_->base].max_value);
+            *option_->data = ChangeDigit( *option_->data, *option_->current_digit, BasePropertiesByte.at(*option_->base).base_representation, -1, BasePropertiesByte.at(*option_->base).max_value);
         }
 
         return true;
@@ -271,12 +296,12 @@ class InputByteBase : public ComponentBase {
 
     int  NextDigit(int digit_number)
     {
-        return (digit_number == base_properties_[*option_->base].max_digits - 1) ? 0 : digit_number + 1;
+        return (digit_number == BasePropertiesByte.at(*option_->base).max_digits - 1) ? 0 : digit_number + 1;
     }
 
     int  PreviousDigit(int digit_number)
     {
-        return (digit_number == 0) ? base_properties_[*option_->base].max_digits - 1 :
+        return (digit_number == 0) ? BasePropertiesByte.at(*option_->base).max_digits - 1 :
                                      digit_number - 1;
     }
 
@@ -285,13 +310,6 @@ class InputByteBase : public ComponentBase {
     Box                  box_;
     Ref<InputByteOption> option_;
     KeyMap               keymap_;
-    std::map<Base, BaseProperties> base_properties_{
-        {Base::Decimal,     { Base::Decimal, 10, 3, {}, 255} },
-        {Base::Octal,       { Base::Octal,   8,  3, "O", 255} },
-        {Base::Hexadecimal, { Base::Hexadecimal, 16, 2, "$", 255} },
-        {Base::Binary,      { Base::Binary,  2,  8, "%", 255} }
-    };
-
 };
 
 class InputWordBase : public ComponentBase {
@@ -324,8 +342,8 @@ public:
     Element Render() override
     {
       bool is_focused = Focused();
-      std::string v = GenerateStringValue( *option_->base, base_properties_[*option_->base].max_digits, *option_->data );
-      std::string prefix = GeneratePrefix( *option_->base_prefix, base_properties_[*option_->base] );
+      std::string v = GenerateStringValue( *option_->base, BasePropertiesWord.at(*option_->base).max_digits, *option_->data );
+      std::string prefix = GeneratePrefix( *option_->base_prefix, BasePropertiesWord.at(*option_->base) );
       auto main_decorator = ftxui::size(HEIGHT, EQUAL, 1) |
                             ftxui::size(ftxui::WIDTH, EQUAL, v.length() + prefix.length() );
       Element element;
@@ -422,6 +440,7 @@ private:
         }
         else if (event == keymap_.decrement_base_event)
         {
+#if 0
           if (*option_->base == Base::Binary) // Check if we need to wrap around
             *option_->base = Base::END;
           else
@@ -430,12 +449,17 @@ private:
 
             *option_->base = static_cast<Base>(value - 1);
           }
+#endif
+          *option_->base = NewBaseValue(*option_->base, -1);
         }
         else if (event == keymap_.increment_base_event)
         {
+#if 0
           int value = static_cast<int>(*option_->base);
 
           *option_->base = static_cast<Base>((value + 1) % (Base::END + 1));
+#endif
+          *option_->base = NewBaseValue(*option_->base, 1);
         }
         else if (event == keymap_.toggle_base_prefix_event)
         {
@@ -457,11 +481,11 @@ private:
         }
         else if (event == keymap_.increment_single_digit_value_event)
         {
-            *option_->data = ChangeDigit( *option_->data, *option_->current_digit, base_properties_[*option_->base].base_representation, 1, base_properties_[*option_->base].max_value);
+            *option_->data = ChangeDigit( *option_->data, *option_->current_digit, BasePropertiesWord.at(*option_->base).base_representation, 1, BasePropertiesWord.at(*option_->base).max_value);
         }
         else if (event == keymap_.decrement_single_digit_value_event)
         {
-            *option_->data = ChangeDigit( *option_->data, *option_->current_digit, base_properties_[*option_->base].base_representation, -1, base_properties_[*option_->base].max_value);
+            *option_->data = ChangeDigit( *option_->data, *option_->current_digit, BasePropertiesWord.at(*option_->base).base_representation, -1, BasePropertiesWord.at(*option_->base).max_value);
         }
 
         return true;
@@ -471,12 +495,12 @@ private:
 
     int  NextDigit(int digit_number)
     {
-        return (digit_number == base_properties_[*option_->base].max_digits - 1) ? 0 : digit_number + 1;
+        return (digit_number == BasePropertiesWord.at(*option_->base).max_digits - 1) ? 0 : digit_number + 1;
     }
 
     int  PreviousDigit(int digit_number)
     {
-        return (digit_number == 0) ? base_properties_[*option_->base].max_digits - 1 :
+        return (digit_number == 0) ? BasePropertiesWord.at(*option_->base).max_digits - 1 :
                                      digit_number - 1;
     }
 
@@ -485,12 +509,6 @@ private:
     Box                  box_;
     Ref<InputWordOption> option_;
     KeyMap               keymap_;
-    std::map<Base, BaseProperties> base_properties_{
-        {Base::Decimal,     { Base::Decimal, 10, 5, {}, 65535 } },
-        {Base::Octal,       { Base::Octal,   8,  6, "O", 65535 } },
-        {Base::Hexadecimal, { Base::Hexadecimal, 16, 4, "$", 65535 } },
-        {Base::Binary,      { Base::Binary,  2,  16, "%", 65535 } }
-    };
 };
 
 Component InputByte(Ref<InputByteOption> option)

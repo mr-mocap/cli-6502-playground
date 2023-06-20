@@ -9,7 +9,7 @@ enum Base {
     Octal,
     Decimal,
     Hexadecimal,
-    END = Hexadecimal
+    END = Hexadecimal + 1
 };
 
 struct InputByteOption {
