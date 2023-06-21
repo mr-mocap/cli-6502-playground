@@ -95,7 +95,9 @@ std::string GenerateStringValue(Base base, int max_digits, int data)
                                                          std::end(buffer),
                                                          data,
                                                          2);
-            return { buffer, result.ptr };
+            size_t len = std::distance(buffer, result.ptr);
+
+            return std::string(max_digits, '0').replace(max_digits - len, len, buffer, len);
         }
         break;
     default:
