@@ -131,7 +131,7 @@ Element RegisterView::generateView() const
                                    text("C") | color( statusBitState( FLAGS6502::C ) )}) | size(WIDTH, EQUAL , 8 + 7)
                           })
                   }) ) |
-           size(WIDTH, GREATER_THAN, strlen("Registers") + 1) | size(HEIGHT, EQUAL, 6 + 2);
+           size(WIDTH, EQUAL, 21) | size(HEIGHT, EQUAL, 6 + 2);
 }
 
 ftxui::Color RegisterView::statusBitState(const FLAGS6502 bit) const
