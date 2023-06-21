@@ -117,20 +117,20 @@ Base NewBaseValue(int current_base_value, int delta)
 }
 
 class InputByteBase : public ComponentBase {
-  public:
+public:
     struct KeyMap {
-      Event increment_value_event    = Event::ArrowUp;
-      Event decrement_value_event    = Event::ArrowDown;
-      Event edit_mode_toggle_event   = Event::Return;
-      Event increment_base_event     = Event::ArrowRight;
-      Event decrement_base_event     = Event::ArrowLeft;
-      Event toggle_base_prefix_event = Space;
+        Event increment_value_event    = Event::ArrowUp;
+        Event decrement_value_event    = Event::ArrowDown;
+        Event edit_mode_toggle_event   = Event::Return;
+        Event increment_base_event     = Event::ArrowRight;
+        Event decrement_base_event     = Event::ArrowLeft;
+        Event toggle_base_prefix_event = Space;
 
-      Event single_digit_edit_mode_toggle_event = Event::Character('d');
-      Event increment_current_digit_event       = Event::ArrowLeft;
-      Event decrement_current_digit_event       = Event::ArrowRight;
-      Event increment_single_digit_value_event  = Event::ArrowUp;
-      Event decrement_single_digit_value_event  = Event::ArrowDown;
+        Event single_digit_edit_mode_toggle_event = Event::Character('d');
+        Event increment_current_digit_event       = Event::ArrowLeft;
+        Event decrement_current_digit_event       = Event::ArrowRight;
+        Event increment_single_digit_value_event  = Event::ArrowUp;
+        Event decrement_single_digit_value_event  = Event::ArrowDown;
     };
 
     InputByteBase(Ref<InputByteOption> option)
@@ -217,21 +217,20 @@ class InputByteBase : public ComponentBase {
         return false;
     }
 
-  private:
+private:
     bool OnMouseEvent(Event event) {
-      hovered_ = box_.Contain(event.mouse().x, event.mouse().y) && CaptureMouse(event);
+        hovered_ = box_.Contain(event.mouse().x, event.mouse().y) && CaptureMouse(event);
 
-      if (!hovered_) {
-        return false;
-      }
+        if (!hovered_)
+            return false;
 
-      if (event.mouse().button != Mouse::Left ||
-          event.mouse().motion != Mouse::Pressed) {
-        return false;
-      }
+        if (event.mouse().button != Mouse::Left ||
+            event.mouse().motion != Mouse::Pressed) {
+            return false;
+        }
 
-      TakeFocus();
-      return true;
+        TakeFocus();
+        return true;
     }
 
     bool OnEditModeEvent(Event &event)
@@ -248,26 +247,16 @@ class InputByteBase : public ComponentBase {
         }
         else if (event == keymap_.decrement_base_event)
         {
-#if 0
-          if (*option_->base == Base::Binary) // Check if we need to wrap around
-              *option_->base = Base::END;
-          else
-          {
-            int value = *option_->base;
-
-            *option_->base = static_cast<Base>(value - 1);
-          }
-#endif
-          *option_->base = NewBaseValue(*option_->base, -1);
+            *option_->base = NewBaseValue(*option_->base, -1);
         }
         else if (event == keymap_.increment_base_event)
         {
-          *option_->base = NewBaseValue(*option_->base, 1);
+            *option_->base = NewBaseValue(*option_->base, 1);
         }
         else if (event == keymap_.toggle_base_prefix_event)
         {
-          // Toggle the prefix
-          *option_->base_prefix = !*option_->base_prefix;
+            // Toggle the prefix
+            *option_->base_prefix = !*option_->base_prefix;
         }
         return true;
     }
@@ -317,18 +306,18 @@ class InputByteBase : public ComponentBase {
 class InputWordBase : public ComponentBase {
 public:
     struct KeyMap {
-      Event increment_value_event    = Event::ArrowUp;
-      Event decrement_value_event    = Event::ArrowDown;
-      Event edit_mode_toggle_event   = Event::Return;
-      Event increment_base_event     = Event::ArrowRight;
-      Event decrement_base_event     = Event::ArrowLeft;
-      Event toggle_base_prefix_event = Space;
+        Event increment_value_event    = Event::ArrowUp;
+        Event decrement_value_event    = Event::ArrowDown;
+        Event edit_mode_toggle_event   = Event::Return;
+        Event increment_base_event     = Event::ArrowRight;
+        Event decrement_base_event     = Event::ArrowLeft;
+        Event toggle_base_prefix_event = Space;
 
-      Event single_digit_edit_mode_toggle_event = Event::Character('d');
-      Event increment_current_digit_event       = Event::ArrowLeft;
-      Event decrement_current_digit_event       = Event::ArrowRight;
-      Event increment_single_digit_value_event  = Event::ArrowUp;
-      Event decrement_single_digit_value_event  = Event::ArrowDown;
+        Event single_digit_edit_mode_toggle_event = Event::Character('d');
+        Event increment_current_digit_event       = Event::ArrowLeft;
+        Event decrement_current_digit_event       = Event::ArrowRight;
+        Event increment_single_digit_value_event  = Event::ArrowUp;
+        Event decrement_single_digit_value_event  = Event::ArrowDown;
     };
 
     InputWordBase(Ref<InputWordOption> option)
@@ -343,49 +332,47 @@ public:
     // Component implementation:
     Element Render() override
     {
-      bool is_focused = Focused();
-      std::string v = GenerateStringValue( *option_->base, BasePropertiesWord.at(*option_->base).max_digits, *option_->data );
-      std::string prefix = GeneratePrefix( *option_->base_prefix, BasePropertiesWord.at(*option_->base) );
-      auto main_decorator = ftxui::size(HEIGHT, EQUAL, 1) |
-                            ftxui::size(ftxui::WIDTH, EQUAL, v.length() + prefix.length() );
-      Element element;
+        bool        is_focused = Focused();
+        std::string v = GenerateStringValue( *option_->base, BasePropertiesWord.at(*option_->base).max_digits, *option_->data );
+        std::string prefix = GeneratePrefix( *option_->base_prefix, BasePropertiesWord.at(*option_->base) );
+        auto main_decorator = ftxui::size(HEIGHT, EQUAL, 1) |
+                              ftxui::size(ftxui::WIDTH, EQUAL, v.length() + prefix.length() );
+        Element element;
 
-      if ( *option_->edit_mode )
-          element = hbox( { text( prefix ), color(Color::Green, text( v )) } );
-      else if ( *option_->single_digit_edit_mode )
-      {
-          // Break into 3 parts
-          size_t  split_point = v.length() - *option_->current_digit - 1;
-          Element first_part  = text( v.substr(0, split_point) ) | color( Color::Yellow );
-          Element cursor_part = text( v.substr(split_point, 1) ) |  bgcolor(Color::White) | color(Color::Red);
-          Element last_part   = text( v.substr(split_point + 1, v.length() - split_point - 1) ) | color(Color::Yellow);
+        if ( *option_->edit_mode )
+            element = hbox( { text( prefix ), color(Color::Green, text( v )) } );
+        else if ( *option_->single_digit_edit_mode )
+        {
+            // Break into 3 parts
+            size_t  split_point = v.length() - *option_->current_digit - 1;
+            Element first_part  = text( v.substr(0, split_point) ) | color( Color::Yellow );
+            Element cursor_part = text( v.substr(split_point, 1) ) |  bgcolor(Color::White) | color(Color::Red);
+            Element last_part   = text( v.substr(split_point + 1, v.length() - split_point - 1) ) | color(Color::Yellow);
 
-          element = hbox( { text( prefix ), first_part, cursor_part, last_part } );
-      }
-      else
-          element = hbox( { text( prefix ), text( v ) } );
+            element = hbox( { text( prefix ), first_part, cursor_part, last_part } );
+        }
+        else
+            element = hbox( { text( prefix ), text( v ) } );
 
-      element |= main_decorator;
-      element |= reflect(box_);
+        element |= main_decorator;
+        element |= reflect(box_);
 
-      if ( is_focused )
-          element |= focus;
+        if ( is_focused )
+            element |= focus;
 
-      if ( hovered_ || is_focused )
-          element |= inverted;
+        if ( hovered_ || is_focused )
+            element |= inverted;
 
-      return element;
+        return element;
     }
 
     bool OnEvent(Event event) override
     {
-        if (event == Event::Custom) {
+        if (event == Event::Custom)
             return false;
-        }
 
-        if ( event.is_mouse() ) {
+        if ( event.is_mouse() )
             return OnMouseEvent(event);
-        }
 
         if ( !Focused() )
             return false;
@@ -441,32 +428,13 @@ private:
             option_->on_change();
         }
         else if (event == keymap_.decrement_base_event)
-        {
-#if 0
-          if (*option_->base == Base::Binary) // Check if we need to wrap around
-            *option_->base = Base::END;
-          else
-          {
-            int value = static_cast<int>(*option_->base);
-
-            *option_->base = static_cast<Base>(value - 1);
-          }
-#endif
-          *option_->base = NewBaseValue(*option_->base, -1);
-        }
+            *option_->base = NewBaseValue(*option_->base, -1);
         else if (event == keymap_.increment_base_event)
-        {
-#if 0
-          int value = static_cast<int>(*option_->base);
-
-          *option_->base = static_cast<Base>((value + 1) % (Base::END + 1));
-#endif
-          *option_->base = NewBaseValue(*option_->base, 1);
-        }
+            *option_->base = NewBaseValue(*option_->base, 1);
         else if (event == keymap_.toggle_base_prefix_event)
         {
-          // Toggle the prefix
-          *option_->base_prefix = !*option_->base_prefix;
+            // Toggle the prefix
+            *option_->base_prefix = !*option_->base_prefix;
         }
         return true;
     }
