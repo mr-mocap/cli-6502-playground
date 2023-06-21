@@ -145,41 +145,41 @@ public:
     // Component implementation:
     Element Render() override
     {
-      bool is_focused = Focused();
-      std::string v = GenerateStringValue( *option_->base, BasePropertiesByte.at(*option_->base).max_digits, *option_->data );
-      std::string prefix = GeneratePrefix( *option_->base_prefix, BasePropertiesByte.at(*option_->base) );
-      auto main_decorator = ftxui::size(HEIGHT, EQUAL, 1) |
-                            ftxui::size(ftxui::WIDTH, EQUAL, v.length() + prefix.length() );
-      Element element;
+        bool is_focused = Focused();
+        std::string v = GenerateStringValue( *option_->base, BasePropertiesByte.at(*option_->base).max_digits, *option_->data );
+        std::string prefix = GeneratePrefix( *option_->base_prefix, BasePropertiesByte.at(*option_->base) );
+        auto main_decorator = ftxui::size(HEIGHT, EQUAL, 1) |
+                              ftxui::size(ftxui::WIDTH, EQUAL, v.length() + prefix.length() );
+        Element element;
 
-      if ( *option_->edit_mode )
-          element = hbox( { text( prefix ), color(Color::Green, text( v )) } );
-      else if ( *option_->single_digit_edit_mode )
-      {
-          // Break into 3 parts
-          size_t  split_point = v.length() - *option_->current_digit - 1;
-          Element first_part  = text( v.substr(0, split_point) ) | color( Color::Yellow );
-          Element cursor_part = text( v.substr(split_point, 1) ) |  bgcolor(Color::White) | color(Color::Red);
-          Element last_part   = text( v.substr(split_point + 1, v.length() - split_point - 1) ) | color(Color::Yellow);
+        if ( *option_->edit_mode )
+            element = hbox( { text( prefix ), color(Color::Green, text( v )) } );
+        else if ( *option_->single_digit_edit_mode )
+        {
+            // Break into 3 parts
+            size_t  split_point = v.length() - *option_->current_digit - 1;
+            Element first_part  = text( v.substr(0, split_point) ) | color( Color::Yellow );
+            Element cursor_part = text( v.substr(split_point, 1) ) |  bgcolor(Color::White) | color(Color::Red);
+            Element last_part   = text( v.substr(split_point + 1, v.length() - split_point - 1) ) | color(Color::Yellow);
 
-          if ( is_focused )
-              element = hbox( { text( prefix ), hbox( { first_part, cursor_part, last_part } ) | focus } );
-          else
-              element = hbox( { text( prefix ), first_part, cursor_part, last_part } );
-      }
-      else
-          element = hbox( { text( prefix ), ( is_focused ) ? text( v ) | focus : text(v) } );
+            if ( is_focused )
+                element = hbox( { text( prefix ), hbox( { first_part, cursor_part, last_part } ) | focus } );
+            else
+                element = hbox( { text( prefix ), first_part, cursor_part, last_part } );
+        }
+        else
+            element = hbox( { text( prefix ), ( is_focused ) ? text( v ) | focus : text(v) } );
 
-      element |= main_decorator;
-      element |= reflect(box_);
+        element |= main_decorator;
+        element |= reflect(box_);
 
-      if ( is_focused )
-          element |= focus;
+        if ( is_focused )
+            element |= focus;
 
-      if ( hovered_ || is_focused )
-          element |= inverted;
+        if ( hovered_ || is_focused )
+            element |= inverted;
 
-      return element;
+        return element;
     }
 
     bool OnEvent(Event event) override
@@ -246,13 +246,9 @@ private:
             option_->on_change();
         }
         else if (event == keymap_.decrement_base_event)
-        {
             *option_->base = NewBaseValue(*option_->base, -1);
-        }
         else if (event == keymap_.increment_base_event)
-        {
             *option_->base = NewBaseValue(*option_->base, 1);
-        }
         else if (event == keymap_.toggle_base_prefix_event)
         {
             // Toggle the prefix
@@ -264,21 +260,13 @@ private:
     bool OnSingleDigitEditModeEvent(Event &event)
     {
         if (event == keymap_.increment_current_digit_event)
-        {
             *option_->current_digit = NextDigit( *option_->current_digit );
-        }
         else if (event == keymap_.decrement_current_digit_event)
-        {
             *option_->current_digit = PreviousDigit( *option_->current_digit );
-        }
         else if (event == keymap_.increment_single_digit_value_event)
-        {
             *option_->data = ChangeDigit( *option_->data, *option_->current_digit, BasePropertiesByte.at(*option_->base).base_representation, 1, BasePropertiesByte.at(*option_->base).max_value);
-        }
         else if (event == keymap_.decrement_single_digit_value_event)
-        {
             *option_->data = ChangeDigit( *option_->data, *option_->current_digit, BasePropertiesByte.at(*option_->base).base_representation, -1, BasePropertiesByte.at(*option_->base).max_value);
-        }
 
         return true;
     }
@@ -442,21 +430,13 @@ private:
     bool OnSingleDigitEditModeEvent(Event &event)
     {
         if (event == keymap_.increment_current_digit_event)
-        {
             *option_->current_digit = NextDigit( *option_->current_digit );
-        }
         else if (event == keymap_.decrement_current_digit_event)
-        {
             *option_->current_digit = PreviousDigit( *option_->current_digit );
-        }
         else if (event == keymap_.increment_single_digit_value_event)
-        {
             *option_->data = ChangeDigit( *option_->data, *option_->current_digit, BasePropertiesWord.at(*option_->base).base_representation, 1, BasePropertiesWord.at(*option_->base).max_value);
-        }
         else if (event == keymap_.decrement_single_digit_value_event)
-        {
             *option_->data = ChangeDigit( *option_->data, *option_->current_digit, BasePropertiesWord.at(*option_->base).base_representation, -1, BasePropertiesWord.at(*option_->base).max_value);
-        }
 
         return true;
     }
