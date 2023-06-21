@@ -151,9 +151,16 @@ public:
         auto main_decorator = ftxui::size(HEIGHT, EQUAL, 1) |
                               ftxui::size(ftxui::WIDTH, EQUAL, v.length() + prefix.length() );
         Element element;
+        Element value_element = text( v );
+
+        if ( is_focused )
+            value_element |= focus;
+
+        if ( hovered_ || is_focused )
+            value_element |= inverted;
 
         if ( *option_->edit_mode )
-            element = hbox( { text( prefix ), color(Color::Green, text( v )) } );
+            element = hbox( { text( prefix ), color(Color::Green, value_element) } );
         else if ( *option_->single_digit_edit_mode )
         {
             // Break into 3 parts
@@ -161,23 +168,17 @@ public:
             Element first_part  = text( v.substr(0, split_point) ) | color( Color::Yellow );
             Element cursor_part = text( v.substr(split_point, 1) ) |  bgcolor(Color::White) | color(Color::Red);
             Element last_part   = text( v.substr(split_point + 1, v.length() - split_point - 1) ) | color(Color::Yellow);
+            Element number_part = hbox( { first_part, cursor_part, last_part } );
 
             if ( is_focused )
-                element = hbox( { text( prefix ), hbox( { first_part, cursor_part, last_part } ) | focus } );
-            else
-                element = hbox( { text( prefix ), first_part, cursor_part, last_part } );
+                number_part |= focus;
+            element = hbox( { text( prefix ),  number_part } );
         }
         else
-            element = hbox( { text( prefix ), ( is_focused ) ? text( v ) | focus : text(v) } );
+            element = hbox( { text( prefix ), value_element } );
 
         element |= main_decorator;
         element |= reflect(box_);
-
-        if ( is_focused )
-            element |= focus;
-
-        if ( hovered_ || is_focused )
-            element |= inverted;
 
         return element;
     }
@@ -326,9 +327,16 @@ public:
         auto main_decorator = ftxui::size(HEIGHT, EQUAL, 1) |
                               ftxui::size(ftxui::WIDTH, EQUAL, v.length() + prefix.length() );
         Element element;
+        Element value_element = text( v );
+
+        if ( is_focused )
+            value_element |= focus;
+
+        if ( hovered_ || is_focused )
+            value_element |= inverted;
 
         if ( *option_->edit_mode )
-            element = hbox( { text( prefix ), color(Color::Green, text( v )) } );
+            element = hbox( { text( prefix ), color(Color::Green, value_element ) } );
         else if ( *option_->single_digit_edit_mode )
         {
             // Break into 3 parts
@@ -336,20 +344,17 @@ public:
             Element first_part  = text( v.substr(0, split_point) ) | color( Color::Yellow );
             Element cursor_part = text( v.substr(split_point, 1) ) |  bgcolor(Color::White) | color(Color::Red);
             Element last_part   = text( v.substr(split_point + 1, v.length() - split_point - 1) ) | color(Color::Yellow);
+            Element number_part = hbox( { first_part, cursor_part, last_part } );
 
-            element = hbox( { text( prefix ), first_part, cursor_part, last_part } );
+            if ( is_focused )
+                number_part |= focus;
+            element = hbox( { text( prefix ), number_part } );
         }
         else
-            element = hbox( { text( prefix ), text( v ) } );
+            element = hbox( { text( prefix ), value_element } );
 
         element |= main_decorator;
         element |= reflect(box_);
-
-        if ( is_focused )
-            element |= focus;
-
-        if ( hovered_ || is_focused )
-            element |= inverted;
 
         return element;
     }
