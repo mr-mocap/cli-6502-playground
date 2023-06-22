@@ -92,6 +92,10 @@ protected:
         }
         return row;
     }
+
+    void affectCurrentByteInEditMode(Screen &screen, const Box &box);
+    void affectCurrentByteInNonEditMode(Screen &screen, const Box &box);
+    void affectCurrentProgramCounter(Screen &screen, const Box &box);
 };
 
 PageView::PageView(std::shared_ptr<RamBusDeviceView> model,
@@ -141,26 +145,10 @@ void PageView::Render(Screen &screen)
     // Show the PC if necessary...
     if (_current_byte_in_page() != -1)
     {
-        auto cursor = pageview_ui_box_for_byte( _current_byte_in_page() );
-
-        // Translate to global coords and draw...
         if ( _in_edit_mode )
-        {
-            Pixel &pixel1 = screen.PixelAt( box_.x_min + cursor.x_min    , box_.y_min + cursor.y_min );
-            Pixel &pixel2 = screen.PixelAt( box_.x_min + cursor.x_min + 1, box_.y_min + cursor.y_min );
-
-            pixel1.underlined = true;
-            pixel1.foreground_color = Color::Yellow;
-            pixel1.dim = false;
-            pixel2.underlined = true;
-            pixel2.foreground_color = Color::Yellow;
-            pixel2.dim = false;
-        }
+            affectCurrentByteInEditMode( screen, pageview_ui_box_for_byte( _current_byte_in_page() ) );
         else
-        {
-            screen.PixelAt( box_.x_min + cursor.x_min    , box_.y_min + cursor.y_min ).inverted = true;
-            screen.PixelAt( box_.x_min + cursor.x_min + 1, box_.y_min + cursor.y_min ).inverted = true;
-        }
+            affectCurrentByteInNonEditMode( screen, pageview_ui_box_for_byte( _current_byte_in_page() ) );
     }
 
     if (_program_counter() != -1)
@@ -168,13 +156,8 @@ void PageView::Render(Screen &screen)
         if ( (_program_counter() & 0xFF00) == (_model->page() << 8) )
         {
             // The program counter is in this page
-            auto pc = pageview_ui_box_for_byte( _program_counter() & 0xFF );
-
-            // Translate to global coords and draw...
-            screen.PixelAt( box_.x_min + pc.x_min    , box_.y_min + pc.y_min ).background_color = Color::Blue;
-            screen.PixelAt( box_.x_min + pc.x_min + 1, box_.y_min + pc.y_min ).background_color = Color::Blue;
+            affectCurrentProgramCounter( screen, pageview_ui_box_for_byte( _program_counter() & 0xFF ) );
         }
-
     }
 }
 
@@ -184,6 +167,37 @@ std::string PageView::byteAsString(int line, int column) const
     size_t  num_written = snprintf(buffer, sizeof(buffer), "%02X", memoryAt(line, column));
 
     return { buffer, num_written };
+}
+
+void PageView::affectCurrentByteInEditMode(Screen &screen, const Box &cursor)
+{
+    // Translate to global coords and draw...
+    Pixel &pixel1 = screen.PixelAt( box_.x_min + cursor.x_min    , box_.y_min + cursor.y_min );
+    Pixel &pixel2 = screen.PixelAt( box_.x_min + cursor.x_min + 1, box_.y_min + cursor.y_min );
+
+    pixel1.underlined = true;
+    pixel1.foreground_color = Color::Yellow;
+    pixel1.dim = false;
+    pixel2.underlined = true;
+    pixel2.foreground_color = Color::Yellow;
+    pixel2.dim = false;
+}
+
+void PageView::affectCurrentByteInNonEditMode(Screen &screen, const Box &cursor)
+{
+    // Translate to global coords and draw...
+    Pixel &pixel1 = screen.PixelAt( box_.x_min + cursor.x_min    , box_.y_min + cursor.y_min );
+    Pixel &pixel2 = screen.PixelAt( box_.x_min + cursor.x_min + 1, box_.y_min + cursor.y_min );
+
+    screen.PixelAt( box_.x_min + cursor.x_min    , box_.y_min + cursor.y_min ).inverted = true;
+    screen.PixelAt( box_.x_min + cursor.x_min + 1, box_.y_min + cursor.y_min ).inverted = true;
+}
+
+void PageView::affectCurrentProgramCounter(Screen &screen, const Box &pc)
+{
+    // Translate to global coords and draw...
+    screen.PixelAt( box_.x_min + pc.x_min    , box_.y_min + pc.y_min ).background_color = Color::Blue;
+    screen.PixelAt( box_.x_min + pc.x_min + 1, box_.y_min + pc.y_min ).background_color = Color::Blue;
 }
 
 Element pageview(std::shared_ptr<RamBusDeviceView> model, Ref<int> current_byte, Ref<int> program_counter, bool in_edit_mode)
