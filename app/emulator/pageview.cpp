@@ -54,7 +54,7 @@ public:
     PageView(std::shared_ptr<RamBusDeviceView> model,
              Ref<int>  current_byte,
              Ref<int>  program_counter,
-             Ref<Decorator> edit_mode_decorator);
+             bool      in_edit_mode);
 
     void ComputeRequirement() override;
 
@@ -65,8 +65,8 @@ protected:
     std::shared_ptr<RamBusDeviceView> _model;
     Ref<int>                          _current_byte_in_page;
     Ref<int>                          _program_counter;
-    Ref<Decorator>                    _edit_mode_decorator;
     Element                           _display;
+    bool                              _in_edit_mode;
 
     std::string byteAsString(int line, int column) const;
 
@@ -97,12 +97,12 @@ protected:
 PageView::PageView(std::shared_ptr<RamBusDeviceView> model,
                    Ref<int>       current_byte,
                    Ref<int>       show_pc,
-                   Ref<Decorator> edit_mode_decorator)
+                   bool           in_edit_mode)
     :
     _model{ std::move(model) },
     _current_byte_in_page{ std::move(current_byte) },
     _program_counter{ std::move(show_pc) },
-    _edit_mode_decorator{ std::move(edit_mode_decorator) }
+    _in_edit_mode{ in_edit_mode }
 {
     std::vector<Elements> grid_rows;
 
@@ -110,8 +110,16 @@ PageView::PageView(std::shared_ptr<RamBusDeviceView> model,
     for (int line = 0, current_cell = 0; line < 16; ++line)
         grid_rows.emplace_back( generateLineWidgets(line) );
 
-    children_.emplace_back( window( hbox({ text(" Memory Page: "), text( PageNumberAsString(_model->page()) ) }),
-                                    gridbox( std::move(grid_rows) ) ) );
+    if ( _in_edit_mode )
+    {
+        children_.emplace_back( window( hbox({ text(" Memory Page: "), text( PageNumberAsString(_model->page()) ) }),
+                                        dim( gridbox( std::move(grid_rows) ) ) ) );
+    }
+    else
+    {
+        children_.emplace_back( window( hbox({ text(" Memory Page: "), text( PageNumberAsString(_model->page()) ) }),
+                                        gridbox( std::move(grid_rows) ) ) );
+    }
 }
 
 void PageView::ComputeRequirement()
@@ -128,14 +136,31 @@ void PageView::SetBox(Box box)
 
 void PageView::Render(Screen &screen)
 {
+    Node::Render(screen);
+
     // Show the PC if necessary...
     if (_current_byte_in_page() != -1)
     {
         auto cursor = pageview_ui_box_for_byte( _current_byte_in_page() );
 
         // Translate to global coords and draw...
-        screen.PixelAt( box_.x_min + cursor.x_min    , box_.y_min + cursor.y_min ).inverted = true;
-        screen.PixelAt( box_.x_min + cursor.x_min + 1, box_.y_min + cursor.y_min ).inverted = true;
+        if ( _in_edit_mode )
+        {
+            Pixel &pixel1 = screen.PixelAt( box_.x_min + cursor.x_min    , box_.y_min + cursor.y_min );
+            Pixel &pixel2 = screen.PixelAt( box_.x_min + cursor.x_min + 1, box_.y_min + cursor.y_min );
+
+            pixel1.underlined = true;
+            pixel1.foreground_color = Color::Yellow;
+            pixel1.dim = false;
+            pixel2.underlined = true;
+            pixel2.foreground_color = Color::Yellow;
+            pixel2.dim = false;
+        }
+        else
+        {
+            screen.PixelAt( box_.x_min + cursor.x_min    , box_.y_min + cursor.y_min ).inverted = true;
+            screen.PixelAt( box_.x_min + cursor.x_min + 1, box_.y_min + cursor.y_min ).inverted = true;
+        }
     }
 
     if (_program_counter() != -1)
@@ -151,7 +176,6 @@ void PageView::Render(Screen &screen)
         }
 
     }
-    Node::Render(screen);
 }
 
 std::string PageView::byteAsString(int line, int column) const
@@ -162,9 +186,9 @@ std::string PageView::byteAsString(int line, int column) const
     return { buffer, num_written };
 }
 
-Element pageview(std::shared_ptr<RamBusDeviceView> model, Ref<int> current_byte, Ref<int> program_counter, Ref<Decorator> edit_mode_decorator)
+Element pageview(std::shared_ptr<RamBusDeviceView> model, Ref<int> current_byte, Ref<int> program_counter, bool in_edit_mode)
 {
-    return std::make_shared<PageView>( std::move(model), std::move(current_byte), std::move(program_counter), std::move(edit_mode_decorator) );
+    return std::make_shared<PageView>( std::move(model), std::move(current_byte), std::move(program_counter), in_edit_mode );
 }
 
 int pageview_byte(int x_coord, int y_coord)

@@ -95,9 +95,9 @@ Element MemoryPageComponent::Render()
         return pageview( _option->model,
                          Ref<int>(&_option->current_byte()),
                          Ref<int>(&_option->show_pc()),
-                         _option->edit_mode_decorator ) | reflect(_box);
+                         _edit_mode ) | reflect(_box);
     else
-        return pageview( _option->model, Ref<int>(-1), Ref<int>(&_option->show_pc()), _option->edit_mode_decorator ) | reflect(_box);
+        return pageview( _option->model, Ref<int>(-1), Ref<int>(&_option->show_pc()), _edit_mode ) | reflect(_box);
 }
 
 void MemoryPageComponent::OnFocusChanged(bool new_focus_state)

@@ -11,7 +11,7 @@
 ftxui::Element pageview(std::shared_ptr<RamBusDeviceView> model,
                         ftxui::Ref<int>                   current_byte,
                         ftxui::Ref<int>                   program_counter,
-                        ftxui::Ref<ftxui::Decorator>      edit_mode_decorator);
+                        bool                              in_edit_mode);
 
 int pageview_byte(int x_coord, int y_coord);
 
