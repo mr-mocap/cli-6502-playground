@@ -1,21 +1,52 @@
 #include "pageview.hpp"
 #include "ftxui/screen/color.hpp"
 #include "ftxui/util/ref.hpp"
+#include "ftxui/dom/elements.hpp"
 #include <utility>
 #include <array>
+#include <iterator>
+#include <algorithm>
 #include <cstdio>
 
 using namespace ftxui;
 
-constexpr int DisplayCellsOfByte    = 2; // in hex characters.  2 hex digits plus a space
+constexpr int DisplayCellsOfByte    = 2; // in hex characters.  2 hex digits
 constexpr int DisplayCellsOfAddress = 4; // 16 bits (4 hex chars)
 constexpr int DisplayCellsOfDecoratedAddress = 6; // '$' prefix.  ':' suffix
 //constexpr int DisplayBytesPerLine   = 16;
 //constexpr int LineNumberOfCells     = DisplayCellsOfAddress + 2 + DisplayBytesPerLine * DisplayCellsOfByte;
 constexpr int LinesInDisplay        = 16;
-constexpr int Spaces = 1;
-constexpr int AddressPart = DisplayCellsOfDecoratedAddress + Spaces;
-constexpr int DataPart = DisplayCellsOfByte * 16 + 15 * Spaces;
+constexpr int Spaces = 1; // Number of spaces in front of a displayed byte
+constexpr int AddressPart = DisplayCellsOfDecoratedAddress;
+constexpr int DataPart = DisplayCellsOfByte * 16 + 16 * Spaces;
+
+namespace
+{
+
+int AddressOfLine(int page, int linenumber)
+{
+    return ((page << 8) + (16 * linenumber)) & 0xFFFF;
+}
+
+std::string AddressAsString(int page_number, int line)
+{
+    int address = AddressOfLine(page_number, line);
+    char buffer[AddressPart + 1];
+
+    size_t num_written = snprintf(buffer, sizeof(buffer), "$%.4X:", static_cast<unsigned int>(address));
+
+    return { buffer, num_written };
+}
+
+std::string PageNumberAsString(int page_number)
+{
+    char buffer[4];
+
+    snprintf(buffer, sizeof(buffer), "%02X ", page_number);
+    return { buffer, 2 };
+}
+
+}
 
 class PageView : public Node
 {
@@ -29,24 +60,37 @@ public:
 
     void Render(Screen &screen) override;
 
+    void SetBox(Box box) override;
 protected:
     std::shared_ptr<RamBusDeviceView> _model;
     Ref<int>                          _current_byte_in_page;
     Ref<int>                          _program_counter;
     Ref<Decorator>                    _edit_mode_decorator;
+    Element                           _display;
 
-    void drawLine(int line, Screen &screen);
-    void drawAddress(int line, Screen &screen);
-    void drawMemoryValues(int line, Screen &screen);
-    int addressOfLine(int page, int linenumber);
+    std::string byteAsString(int line, int column) const;
 
-    unsigned int memoryAt(int line, int column)
+    unsigned int memoryAt(int line, int column) const
     {
         size_t page_index = _model->page() * 256;
         size_t line_index = page_index + line * 16;
         size_t index = line_index + static_cast<size_t>(column);
 
         return _model->model()->memory()[ index ];
+    }
+
+    Elements generateLineWidgets(int line) const
+    {
+        Elements row;
+
+        row.reserve(17);
+        row.emplace_back( notflex( text( AddressAsString(_model->page(), line) ) ) );
+        for (int column = 0; column < 16; ++column)
+        {
+            row.emplace_back( notflex( text(" ") ) );
+            row.emplace_back( notflex( text( byteAsString(line, column) ) ) );
+        }
+        return row;
     }
 };
 
@@ -60,19 +104,31 @@ PageView::PageView(std::shared_ptr<RamBusDeviceView> model,
     _program_counter{ std::move(show_pc) },
     _edit_mode_decorator{ std::move(edit_mode_decorator) }
 {
+    std::vector<Elements> grid_rows;
+
+    grid_rows.reserve(16);
+    for (int line = 0, current_cell = 0; line < 16; ++line)
+        grid_rows.emplace_back( generateLineWidgets(line) );
+
+    children_.emplace_back( window( hbox({ text(" Memory Page: "), text( PageNumberAsString(_model->page()) ) }),
+                                    gridbox( std::move(grid_rows) ) ) );
 }
 
 void PageView::ComputeRequirement()
 {
-    requirement_.min_x = AddressPart + DataPart;
-    requirement_.min_y = LinesInDisplay;
+    Node::ComputeRequirement();
+    requirement_ = children_[0]->requirement();
+}
+
+void PageView::SetBox(Box box)
+{
+    Node::SetBox(box);
+    children_[0]->SetBox(box);
 }
 
 void PageView::Render(Screen &screen)
 {
-    for (int i = 0; i < LinesInDisplay; ++i)
-        drawLine(i, screen);
-
+    // Show the PC if necessary...
     if (_current_byte_in_page() != -1)
     {
         auto cursor = pageview_ui_box_for_byte( _current_byte_in_page() );
@@ -93,56 +149,17 @@ void PageView::Render(Screen &screen)
             screen.PixelAt( box_.x_min + pc.x_min    , box_.y_min + pc.y_min ).background_color = Color::Blue;
             screen.PixelAt( box_.x_min + pc.x_min + 1, box_.y_min + pc.y_min ).background_color = Color::Blue;
         }
+
     }
+    Node::Render(screen);
 }
 
-void PageView::drawLine(int line, Screen &screen)
+std::string PageView::byteAsString(int line, int column) const
 {
-    drawAddress(line, screen);
-    drawMemoryValues(line, screen);
-}
+    char buffer[4];
+    size_t  num_written = snprintf(buffer, sizeof(buffer), "%02X", memoryAt(line, column));
 
-void PageView::drawAddress(int line, Screen &screen)
-{
-    int address = addressOfLine(_model->page(), line);
-    char buffer[AddressPart + 1];
-
-    snprintf(buffer, sizeof(buffer), "$%.4X: ", static_cast<unsigned int>(address));
-
-    for (int i = 0; i < AddressPart; ++i)
-        screen.PixelAt(box_.x_min + i, box_.y_min + line).character = buffer[i];
-}
-
-void PageView::drawMemoryValues(int line, Screen &screen)
-{
-    char buffer[DataPart + 1];
-
-    snprintf(buffer, sizeof(buffer), "%02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X",
-             memoryAt(line, 0x0),
-             memoryAt(line, 0x1),
-             memoryAt(line, 0x2),
-             memoryAt(line, 0x3),
-             memoryAt(line, 0x4),
-             memoryAt(line, 0x5),
-             memoryAt(line, 0x6),
-             memoryAt(line, 0x7),
-             memoryAt(line, 0x8),
-             memoryAt(line, 0x9),
-             memoryAt(line, 0xA),
-             memoryAt(line, 0xB),
-             memoryAt(line, 0xC),
-             memoryAt(line, 0xD),
-             memoryAt(line, 0xE),
-             memoryAt(line, 0xF)
-             );
-
-    for (int i = 0; i < DataPart; ++i)
-        screen.PixelAt(box_.x_min + AddressPart + i, box_.y_min + line).character = buffer[i];
-}
-
-int PageView::addressOfLine(int page, int linenumber)
-{
-    return ((page << 8) + (16 * linenumber)) & 0xFFFF;
+    return { buffer, num_written };
 }
 
 Element pageview(std::shared_ptr<RamBusDeviceView> model, Ref<int> current_byte, Ref<int> program_counter, Ref<Decorator> edit_mode_decorator)
@@ -161,7 +178,7 @@ int pageview_byte(int x_coord, int y_coord)
         {
             int pos_in_byte = (x_coord - AddressPart) % 3;
 
-            if (pos_in_byte < 2)
+            if (pos_in_byte > 0)
             {
                 // It does!
                 return (y_coord << 4) | ((x_coord - AddressPart) / 3);
@@ -176,7 +193,7 @@ Box pageview_ui_box_for_byte(int byte)
 {
     int line_pos = byte & 0x0F;
     int line = (byte >> 4) & 0x0F;
-    int x_pos = AddressPart + line_pos * 3;
+    int x_pos = AddressPart + line_pos * 3 + 1;
 
-    return Box{ x_pos, x_pos + 1, line, line };
+    return Box{ x_pos + 1, x_pos + 2, line + 1, line + 1 };
 }

@@ -34,7 +34,6 @@ public:
     InputWordOption              input_nmi_option;
     InputWordOption              input_reset_option;
     InputWordOption              input_irq_option;
-    ftxui::Component             page_view_component;
     ftxui::Component             memory_page_component;
     ftxui::Component             register_view_component;
     ftxui::Component             disassembly_component;

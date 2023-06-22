@@ -123,18 +123,6 @@ void CLIPlaygroundApplication::setup_ui()
         } );
     system_vectors = Container::Vertical({ nmi_vector, reset_vector, irq_vector });
 
-    page_view_component = Renderer(
-        [&]()
-        {
-            char buffer[16];
-
-            snprintf(buffer, sizeof(buffer), "%02X ", _memorypage_option.model->page());
-            Element mpc_element = memory_page_component->Render();
-
-            mpc_element->ComputeRequirement();
-            return window( hbox({ text(" Memory Page: "), text(buffer) }), mpc_element ) | size(HEIGHT, EQUAL, mpc_element->requirement().min_y + 2);
-        });
-
     disassembly_component = disassembly( &_disassembly_option );
 
     renderer = Renderer( Container::Vertical({ Container::Horizontal({ memory_page_component,
@@ -246,7 +234,7 @@ int CLIPlaygroundApplication::mainLoop()
 Element CLIPlaygroundApplication::generateView() const
 {
     return window( text("6502 Playground") | hcenter, vbox({
-                                                           hbox({ page_view_component->Render(),
+                                                           hbox({ memory_page_component->Render(),
                                                                   window( text("Disassembly"), disassembly_component->Render() ) | size(HEIGHT, EQUAL, 17),
                                                                   vbox({ register_view_component->Render(),
                                                                          clock_ticks->Render(),

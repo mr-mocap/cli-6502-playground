@@ -203,7 +203,7 @@ bool MemoryPageComponent::OnMouseEvent(Event &event)
 {
     _hovered = _box.Contain(event.mouse().x, event.mouse().y) && CaptureMouse(event);
     if (_hovered) {
-        int current_byte = pageview_byte(event.mouse().x - _box.x_min, event.mouse().y - _box.y_min);
+        int current_byte = pageview_byte(event.mouse().x - _box.x_min - 1, event.mouse().y - _box.y_min - 1);
 
         if (current_byte == -1)
             return false;
