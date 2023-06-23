@@ -156,18 +156,18 @@ public:
         if ( is_focused )
             value_element |= focus;
 
-        if ( hovered_ || is_focused )
+        if ( hovered_ || (is_focused && !*option_->edit_mode) )
             value_element |= inverted;
 
         if ( *option_->edit_mode )
-            element = hbox( { text( prefix ), color(Color::Green, value_element) } );
+            element = hbox( { text( prefix ), value_element | color(Color::Yellow) | underlined } );
         else if ( *option_->single_digit_edit_mode )
         {
             // Break into 3 parts
             size_t  split_point = v.length() - *option_->current_digit - 1;
-            Element first_part  = text( v.substr(0, split_point) ) | color( Color::Yellow );
-            Element cursor_part = text( v.substr(split_point, 1) ) |  bgcolor(Color::White) | color(Color::Red);
-            Element last_part   = text( v.substr(split_point + 1, v.length() - split_point - 1) ) | color(Color::Yellow);
+            Element first_part  = text( v.substr(0, split_point) ) | color( Color::Yellow ) | dim;
+            Element cursor_part = text( v.substr(split_point, 1) ) |  color(Color::Yellow);
+            Element last_part   = text( v.substr(split_point + 1, v.length() - split_point - 1) ) | color(Color::Yellow) | dim;
             Element number_part = hbox( { first_part, cursor_part, last_part } );
 
             if ( is_focused )
@@ -332,18 +332,18 @@ public:
         if ( is_focused )
             value_element |= focus;
 
-        if ( hovered_ || is_focused )
+        if ( hovered_ || (is_focused && !*option_->edit_mode) )
             value_element |= inverted;
 
         if ( *option_->edit_mode )
-            element = hbox( { text( prefix ), color(Color::Green, value_element ) } );
+            element = hbox( { text( prefix ), value_element | color(Color::Yellow) | underlined } );
         else if ( *option_->single_digit_edit_mode )
         {
             // Break into 3 parts
             size_t  split_point = v.length() - *option_->current_digit - 1;
-            Element first_part  = text( v.substr(0, split_point) ) | color( Color::Yellow );
-            Element cursor_part = text( v.substr(split_point, 1) ) |  bgcolor(Color::White) | color(Color::Red);
-            Element last_part   = text( v.substr(split_point + 1, v.length() - split_point - 1) ) | color(Color::Yellow);
+            Element first_part  = text( v.substr(0, split_point) ) | color( Color::Yellow ) | dim;
+            Element cursor_part = text( v.substr(split_point, 1) ) |  color(Color::Yellow);
+            Element last_part   = text( v.substr(split_point + 1, v.length() - split_point - 1) ) | color(Color::Yellow) | dim;
             Element number_part = hbox( { first_part, cursor_part, last_part } );
 
             if ( is_focused )
