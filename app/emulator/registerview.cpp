@@ -5,29 +5,9 @@
 #include <array>
 #include <charconv>
 
-using namespace std;
 using namespace ftxui;
 
-namespace
-{
 
-void ToHexString(uint8_t new_value, std::string &representation)
-{
-    char buffer[3];
-
-    snprintf(buffer, sizeof(buffer), "%02X", new_value);
-    representation.assign( buffer, sizeof(buffer) - 1 );
-}
-
-void ToHexString(uint16_t new_value, std::string &representation)
-{
-    char buffer[5];
-
-    snprintf(buffer, sizeof(buffer), "%04X", new_value);
-    representation.assign( buffer, sizeof(buffer) - 1 );
-}
-
-}
 RegisterView::RegisterView(QObject *parent)
     :
     QObject(parent)
