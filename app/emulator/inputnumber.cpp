@@ -472,14 +472,6 @@ public:
         Event increment_current_mask_event  = Event::ArrowRight;
         Event decrement_current_mask_event  = Event::ArrowLeft;
         Event toggle_current_mask_event     = Space;
-#if 0
-        Event increment_value_event    = Event::ArrowUp;
-        Event decrement_value_event    = Event::ArrowDown;
-        Event edit_mode_toggle_event   = Event::Return;
-        Event single_digit_edit_mode_toggle_event = Event::Character('d');
-        Event increment_single_digit_value_event  = Event::ArrowUp;
-        Event decrement_single_digit_value_event  = Event::ArrowDown;
-#endif
     };
 
     Status(Ref<StatusOption> option)
