@@ -570,6 +570,9 @@ protected:
 
     Elements _generateWidgets(const StatusOption &option)
     {
+        std::string set = "◉";
+        std::string not_set = "○";
+        std::string no_value = " ";
         Elements elements;
         bool is_focused = Focused();
 
@@ -577,16 +580,26 @@ protected:
         for (size_t iCurrentIndex = 0; iCurrentIndex < option.masks.size(); ++iCurrentIndex)
         {
             const auto &iCurrentMask = option.masks[iCurrentIndex];
+            bool has_mask = iCurrentMask.mask_value != -1;
             bool mask_is_set = *option.status & iCurrentMask.mask_value;
-            Element e = text(iCurrentMask.what_to_display) | notflex;
+            Element e;
 
+            if ( has_mask )
+                if ( mask_is_set )
+                    e = vtext(set + iCurrentMask.what_to_display);
+                else
+                    e = vtext(not_set + iCurrentMask.what_to_display);
+            else
+                e = vtext(no_value + iCurrentMask.what_to_display);
+
+            e |= notflex;
             if ( is_focused && (iCurrentMask.mask_value != -1) &&
                  (*option.current_mask == static_cast<int>(iCurrentIndex)) )
                 e |= inverted;
 
             if ( !elements.empty() )
                 elements.emplace_back( filler() );
-            if ( iCurrentMask.mask_value == -1 )
+            if ( !has_mask )
                 elements.emplace_back( e ); // No color because no value
             else
                 elements.emplace_back( e | color( (mask_is_set) ? Color::Green : Color::Red ) );

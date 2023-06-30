@@ -110,10 +110,10 @@ Element RegisterView::generateView() const
                             hbox({ _stack_pointer_input->Render(), filler() }),
                             hbox({ _program_counter_input->Render(), filler() }),
                             _status_input->Render()
-                            | size(WIDTH, EQUAL , 8 + 7)
+                              | size(WIDTH, EQUAL , 8 + 7) | size(HEIGHT, EQUAL, 2)
                           })
                   }) ) |
-           size(WIDTH, EQUAL, 21) | size(HEIGHT, EQUAL, 6 + 2);
+           size(WIDTH, EQUAL, 21);
 }
 
 std::vector<StatusOption::Mask> RegisterView::generate6502StatusMasks()
