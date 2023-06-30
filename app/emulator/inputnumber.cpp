@@ -166,7 +166,7 @@ public:
             // Break into 3 parts
             size_t  split_point = v.length() - *option_->current_digit - 1;
             Element first_part  = text( v.substr(0, split_point) ) | color( Color::Yellow ) | dim;
-            Element cursor_part = text( v.substr(split_point, 1) ) |  color(Color::Yellow);
+            Element cursor_part = text( v.substr(split_point, 1) ) | color(Color::Yellow);
             Element last_part   = text( v.substr(split_point + 1, v.length() - split_point - 1) ) | color(Color::Yellow) | dim;
             Element number_part = hbox( { first_part, cursor_part, last_part } );
 
@@ -342,7 +342,7 @@ public:
             // Break into 3 parts
             size_t  split_point = v.length() - *option_->current_digit - 1;
             Element first_part  = text( v.substr(0, split_point) ) | color( Color::Yellow ) | dim;
-            Element cursor_part = text( v.substr(split_point, 1) ) |  color(Color::Yellow);
+            Element cursor_part = text( v.substr(split_point, 1) ) | color(Color::Yellow);
             Element last_part   = text( v.substr(split_point + 1, v.length() - split_point - 1) ) | color(Color::Yellow) | dim;
             Element number_part = hbox( { first_part, cursor_part, last_part } );
 
@@ -466,6 +466,143 @@ private:
     KeyMap               keymap_;
 };
 
+class Status : public ComponentBase {
+public:
+    struct KeyMap {
+        Event increment_current_mask_event  = Event::ArrowRight;
+        Event decrement_current_mask_event  = Event::ArrowLeft;
+        Event toggle_current_mask_event     = Space;
+#if 0
+        Event increment_value_event    = Event::ArrowUp;
+        Event decrement_value_event    = Event::ArrowDown;
+        Event edit_mode_toggle_event   = Event::Return;
+        Event single_digit_edit_mode_toggle_event = Event::Character('d');
+        Event increment_single_digit_value_event  = Event::ArrowUp;
+        Event decrement_single_digit_value_event  = Event::ArrowDown;
+#endif
+    };
+
+    Status(Ref<StatusOption> option)
+        :
+        option_( std::move(option) )
+    {
+    }
+
+    Element Render() override
+    {
+        return hbox( _generateWidgets( *option_ ) );
+    }
+
+    bool Focusable() const final { return true; }
+
+    bool OnEvent(Event event) override
+    {
+        if (event == Event::Custom)
+            return false;
+
+        if ( event.is_mouse() )
+            return OnMouseEvent(event);
+
+        if ( !Focused() )
+            return false;
+
+        if (event == keymap_.increment_current_mask_event) // INCrement value
+        {
+            *option_->current_mask = nextCurrentMask();
+            option_->on_current_mask_change();
+            return true;
+        }
+        else if (event == keymap_.decrement_current_mask_event) // DECrement value
+        {
+            *option_->current_mask = previousCurrentMask();
+            option_->on_current_mask_change();
+            return true;
+        }
+        else if (event == keymap_.toggle_current_mask_event)
+        {
+            *option_->status = *option_->status ^ option_->masks[ *option_->current_mask ].mask_value;
+            option_->on_change();
+            return true;
+        }
+        return false;
+    }
+
+    bool OnMouseEvent(Event event)
+    {
+        hovered_ = box_.Contain(event.mouse().x, event.mouse().y) && CaptureMouse(event);
+
+        if (!hovered_) {
+            return false;
+        }
+
+        if (event.mouse().button != Mouse::Left ||
+            event.mouse().motion != Mouse::Pressed) {
+            return false;
+        }
+
+        TakeFocus();
+        return true;
+    }
+
+    int nextCurrentMask() const
+    {
+        int temp = *option_->current_mask;
+
+        while (true)
+        {
+            temp = (temp + 1) % static_cast<int>(option_->masks.size());
+            if ( option_->masks[ temp ].mask_value != -1 )
+                break;
+        }
+        return temp;
+    }
+
+    int previousCurrentMask() const
+    {
+        int temp = *option_->current_mask;
+
+        while (true)
+        {
+            temp = (temp - 1 + option_->masks.size()) % static_cast<int>(option_->masks.size());
+            if ( option_->masks[ temp ].mask_value != -1 )
+                break;
+        }
+        return temp;
+    }
+
+protected:
+    bool              hovered_ = false;
+    Box               box_;
+    Ref<StatusOption> option_;
+    KeyMap            keymap_;
+
+    Elements _generateWidgets(const StatusOption &option)
+    {
+        Elements elements;
+        bool is_focused = Focused();
+
+        elements.reserve( option.masks.size() + option.masks.size() - 1);
+        for (size_t iCurrentIndex = 0; iCurrentIndex < option.masks.size(); ++iCurrentIndex)
+        {
+            const auto &iCurrentMask = option.masks[iCurrentIndex];
+            bool mask_is_set = *option.status & iCurrentMask.mask_value;
+            Element e = text(iCurrentMask.what_to_display) | notflex;
+
+            if ( is_focused && (iCurrentMask.mask_value != -1) &&
+                 (*option.current_mask == static_cast<int>(iCurrentIndex)) )
+                e |= inverted;
+
+            if ( !elements.empty() )
+                elements.emplace_back( filler() );
+            if ( iCurrentMask.mask_value == -1 )
+                elements.emplace_back( e ); // No color because no value
+            else
+                elements.emplace_back( e | color( (mask_is_set) ? Color::Green : Color::Red ) );
+        }
+        return elements;
+    }
+};
+
 Component InputByte(Ref<InputByteOption> option)
 {
     return Make<InputByteBase>( std::move(option) );
@@ -474,4 +611,9 @@ Component InputByte(Ref<InputByteOption> option)
 Component InputWord(Ref<InputWordOption> option)
 {
     return Make<InputWordBase>( std::move(option) );
+}
+
+Component InputStatus(Ref<StatusOption> option)
+{
+    return Make<Status>( std::move(option) );
 }

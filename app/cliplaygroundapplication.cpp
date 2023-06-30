@@ -110,9 +110,6 @@ void CLIPlaygroundApplication::setup_ui()
     reset_vector = InputWord( &input_reset_option );
     irq_vector   = InputWord( &input_irq_option );
 
-
-
-
     clock_ticks = Renderer(
         [&]()
         {

@@ -47,20 +47,21 @@ protected:
     InputByteOption   _input_y_option;
     InputByteOption   _input_stack_pointer_option;
     InputWordOption   _input_program_counter_option;
-    uint8_t           _status_representation;
+    StatusOption      _status_option;
     ftxui::Component  _accumulator_input = InputByte(&_input_a_option);
     ftxui::Component  _x_input = InputByte(&_input_x_option);
     ftxui::Component  _y_input = InputByte(&_input_y_option);
     ftxui::Component  _stack_pointer_input = InputByte(&_input_stack_pointer_option);
     ftxui::Component  _program_counter_input = InputWord(&_input_program_counter_option);
+    ftxui::Component  _status_input = InputStatus(&_status_option);
     ftxui::Component  _inputs;
     bool              _edit_mode = false;
 
     void disconnectModelSignals(olc6502 *m);
     void connectModelSignals(olc6502 *m);
     void generateContent();
+    std::vector<StatusOption::Mask> generate6502StatusMasks();
     ftxui::Element generateView() const;
-    ftxui::Color statusBitState(const FLAGS6502 flag) const;
 
 private slots:
     void onAChanged(uint8_t new_value);

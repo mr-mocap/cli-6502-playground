@@ -12,6 +12,7 @@ RegisterView::RegisterView(QObject *parent)
     :
     QObject(parent)
 {
+    _status_option.masks = generate6502StatusMasks();
     _input_a_option.on_change = [this]()
     {
         if ( model() )
@@ -51,6 +52,12 @@ RegisterView::RegisterView(QObject *parent)
             _model->registers().program_counter = *_input_program_counter_option.data;
         }
     };
+
+    _status_option.on_change = [this]()
+    {
+        if ( model() )
+            _model->registers().status = *_status_option.status;
+    };
 }
 
 void RegisterView::setModel(olc6502 *new_model)
@@ -78,7 +85,8 @@ Component RegisterView::component()
                                   _x_input,
                                   _y_input,
                                   _stack_pointer_input,
-                                  _program_counter_input
+                                  _program_counter_input,
+                                  _status_input
     });
     return Renderer( _inputs, std::bind( &RegisterView::generateView, this ) );
 }
@@ -101,22 +109,23 @@ Element RegisterView::generateView() const
                             hbox({ _y_input->Render(), filler() }),
                             hbox({ _stack_pointer_input->Render(), filler() }),
                             hbox({ _program_counter_input->Render(), filler() }),
-                            hbox({ text("N") | color( statusBitState( FLAGS6502::N ) ), filler(),
-                                   text("V") | color( statusBitState( FLAGS6502::V ) ), filler(),
-                                   text("-"), filler(),
-                                   text("B") | color( statusBitState( FLAGS6502::B ) ), filler(),
-                                   text("D") | color( statusBitState( FLAGS6502::D ) ), filler(),
-                                   text("I") | color( statusBitState( FLAGS6502::I ) ), filler(),
-                                   text("Z") | color( statusBitState( FLAGS6502::Z ) ), filler(),
-                                   text("C") | color( statusBitState( FLAGS6502::C ) )}) | size(WIDTH, EQUAL , 8 + 7)
+                            _status_input->Render()
+                            | size(WIDTH, EQUAL , 8 + 7)
                           })
                   }) ) |
            size(WIDTH, EQUAL, 21) | size(HEIGHT, EQUAL, 6 + 2);
 }
 
-ftxui::Color RegisterView::statusBitState(const FLAGS6502 bit) const
+std::vector<StatusOption::Mask> RegisterView::generate6502StatusMasks()
 {
-    return (_status_representation & bit) ? Color::Green : Color::Red;
+    return { { FLAGS6502::N, "N" },
+             { FLAGS6502::V, "V" },
+             { -1, "-" },
+             { FLAGS6502::B, "B" },
+             { FLAGS6502::D, "D" },
+             { FLAGS6502::I, "I" },
+             { FLAGS6502::Z, "Z" },
+             { FLAGS6502::C, "C" } };
 }
 
 void RegisterView::disconnectModelSignals(olc6502 *m)
@@ -194,5 +203,5 @@ void RegisterView::onPCChanged(uint16_t new_value)
 
 void RegisterView::onStatusChanged(uint8_t new_value)
 {
-    _status_representation = new_value;
+    *_status_option.status = new_value;
 }

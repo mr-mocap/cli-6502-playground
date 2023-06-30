@@ -3,6 +3,7 @@
 
 #include <ftxui/component/component.hpp>
 #include <functional>
+#include <map>
 
 enum Base {
     Binary,
@@ -36,7 +37,23 @@ struct InputWordOption {
   ftxui::Ref<int>      current_digit = 0;
 };
 
+struct StatusOption {
+  struct Mask {
+      int         mask_value;
+      std::string what_to_display;
+  };
+
+  /// Called when the content changes.
+  std::function<void()> on_change = [] {};
+  std::function<void()> on_current_mask_change = [] {};
+
+  ftxui::Ref<int>   status;
+  ftxui::Ref<int>   current_mask = 0;
+  std::vector<Mask> masks;
+};
+
 ftxui::Component InputByte(ftxui::Ref<InputByteOption> option = {});
 ftxui::Component InputWord(ftxui::Ref<InputWordOption> option = {});
+ftxui::Component InputStatus(ftxui::Ref<StatusOption> option = {});
 
 #endif // INPUTNUMBER_HPP
