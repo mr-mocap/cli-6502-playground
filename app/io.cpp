@@ -537,6 +537,8 @@ QString SuffixOf(const QString &s)
 
 std::optional<MemoryBlock> ReturnOnlyError(QIODevice *device)
 {
+    Q_UNUSED(device)
+
     return {};
 }
 
