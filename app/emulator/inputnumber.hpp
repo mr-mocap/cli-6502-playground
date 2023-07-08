@@ -41,6 +41,8 @@ struct StatusOption {
   struct Mask {
       int         mask_value;
       std::string what_to_display;
+
+      static constexpr int NoMask = -1;
   };
 
   /// Called when the content changes.

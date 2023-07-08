@@ -48,12 +48,12 @@ protected:
     InputByteOption   _input_stack_pointer_option;
     InputWordOption   _input_program_counter_option;
     StatusOption      _status_option;
-    ftxui::Component  _accumulator_input = InputByte(&_input_a_option);
-    ftxui::Component  _x_input = InputByte(&_input_x_option);
-    ftxui::Component  _y_input = InputByte(&_input_y_option);
-    ftxui::Component  _stack_pointer_input = InputByte(&_input_stack_pointer_option);
-    ftxui::Component  _program_counter_input = InputWord(&_input_program_counter_option);
-    ftxui::Component  _status_input = InputStatus(&_status_option);
+    ftxui::Component  _accumulator_input;
+    ftxui::Component  _x_input;
+    ftxui::Component  _y_input;
+    ftxui::Component  _stack_pointer_input;
+    ftxui::Component  _program_counter_input;
+    ftxui::Component  _status_input;
     ftxui::Component  _inputs;
     bool              _edit_mode = false;
 

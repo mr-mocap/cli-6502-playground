@@ -10,9 +10,15 @@ using namespace ftxui;
 
 RegisterView::RegisterView(QObject *parent)
     :
-    QObject(parent)
+    QObject(parent),
+    _accumulator_input( InputByte(&_input_a_option) ),
+    _x_input( InputByte(&_input_x_option) ),
+    _y_input( InputByte(&_input_y_option) ),
+    _stack_pointer_input( InputByte(&_input_stack_pointer_option) ),
+    _program_counter_input( InputWord(&_input_program_counter_option) )
 {
     _status_option.masks = generate6502StatusMasks();
+    _status_input = InputStatus(&_status_option);
     _input_a_option.on_change = [this]()
     {
         if ( model() )

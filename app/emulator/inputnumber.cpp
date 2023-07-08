@@ -2,7 +2,9 @@
 #include <map>
 #include <cmath>
 #include <charconv>
+#include <algorithm>
 
+#include "ftxui/component/component.hpp"
 #include "ftxui/dom/elements.hpp"
 
 using namespace ftxui;
@@ -35,7 +37,7 @@ const std::map<Base, BaseProperties> BasePropertiesWord {
 
 int ChangeDigit(int current_value, int digit_number, int base, int delta, int max_value_of_representation)
 {
-    int p = pow(base, digit_number);
+    int p = static_cast<int>(std::pow(base, digit_number));
 
     // First, shift the wanted digit to the first position...
     int shifted_current_value = current_value / p;
@@ -149,7 +151,7 @@ public:
         std::string v = GenerateStringValue( *option_->base, BasePropertiesByte.at(*option_->base).max_digits, *option_->data );
         std::string prefix = GeneratePrefix( *option_->base_prefix, BasePropertiesByte.at(*option_->base) );
         auto main_decorator = ftxui::size(HEIGHT, EQUAL, 1) |
-                              ftxui::size(ftxui::WIDTH, EQUAL, v.length() + prefix.length() );
+                              ftxui::size(ftxui::WIDTH, EQUAL, static_cast<int>(v.length() + prefix.length()) );
         Element element;
         Element value_element = text( v );
 
@@ -325,7 +327,7 @@ public:
         std::string v = GenerateStringValue( *option_->base, BasePropertiesWord.at(*option_->base).max_digits, *option_->data );
         std::string prefix = GeneratePrefix( *option_->base_prefix, BasePropertiesWord.at(*option_->base) );
         auto main_decorator = ftxui::size(HEIGHT, EQUAL, 1) |
-                              ftxui::size(ftxui::WIDTH, EQUAL, v.length() + prefix.length() );
+                              ftxui::size(ftxui::WIDTH, EQUAL, static_cast<int>(v.length() + prefix.length()) );
         Element element;
         Element value_element = text( v );
 
@@ -466,23 +468,22 @@ private:
     KeyMap               keymap_;
 };
 
-class Status : public ComponentBase {
+class InputBitBase : public ComponentBase {
 public:
     struct KeyMap {
-        Event increment_current_mask_event  = Event::ArrowRight;
-        Event decrement_current_mask_event  = Event::ArrowLeft;
-        Event toggle_current_mask_event     = Space;
+        Event toggle_current_mask_event = Space;
     };
 
-    Status(Ref<StatusOption> option)
+    InputBitBase(Ref<StatusOption> option, size_t our_mask)
         :
-        option_( std::move(option) )
+        option_( std::move(option) ),
+        our_mask_(our_mask)
     {
     }
 
     Element Render() override
     {
-        return hbox( _generateWidgets( *option_ ) );
+        return hbox({ vbox( _generateWidgets() | reflect(box_) ), filler() }) | flex;
     }
 
     bool Focusable() const final { return true; }
@@ -498,30 +499,22 @@ public:
         if ( !Focused() )
             return false;
 
-        if (event == keymap_.increment_current_mask_event) // INCrement value
+        if (event == keymap_.toggle_current_mask_event)
         {
-            *option_->current_mask = nextCurrentMask();
-            option_->on_current_mask_change();
-            return true;
-        }
-        else if (event == keymap_.decrement_current_mask_event) // DECrement value
-        {
-            *option_->current_mask = previousCurrentMask();
-            option_->on_current_mask_change();
-            return true;
-        }
-        else if (event == keymap_.toggle_current_mask_event)
-        {
-            *option_->status = *option_->status ^ option_->masks[ *option_->current_mask ].mask_value;
-            option_->on_change();
-            return true;
+            // Don't toggle if we don't have a mask...
+            if ( mask().mask_value != StatusOption::Mask::NoMask )
+            {
+                option_().status() ^= mask().mask_value;
+                option_().on_change();
+                return true;
+            }
         }
         return false;
     }
 
     bool OnMouseEvent(Event event)
     {
-        hovered_ = box_.Contain(event.mouse().x, event.mouse().y) && CaptureMouse(event);
+        hovered_ = box_.Contain( event.mouse().x, event.mouse().y );
 
         if (!hovered_) {
             return false;
@@ -532,81 +525,54 @@ public:
             return false;
         }
 
+        if ( mask().mask_value == StatusOption::Mask::NoMask )
+            return false; // No mask present, so don't accept the selection attempt
+
         TakeFocus();
         return true;
     }
 
-    int nextCurrentMask() const
-    {
-        int temp = *option_->current_mask;
-
-        while (true)
-        {
-            temp = (temp + 1) % static_cast<int>(option_->masks.size());
-            if ( option_->masks[ temp ].mask_value != -1 )
-                break;
-        }
-        return temp;
-    }
-
-    int previousCurrentMask() const
-    {
-        int temp = *option_->current_mask;
-
-        while (true)
-        {
-            temp = (temp - 1 + option_->masks.size()) % static_cast<int>(option_->masks.size());
-            if ( option_->masks[ temp ].mask_value != -1 )
-                break;
-        }
-        return temp;
-    }
+    const StatusOption::Mask &mask() const { return option_().masks[ our_mask_ ]; }
 
 protected:
-    bool              hovered_ = false;
-    Box               box_;
-    Ref<StatusOption> option_;
-    KeyMap            keymap_;
+    bool                     hovered_ = false;
+    ftxui::Ref<StatusOption> option_;
+    size_t                   our_mask_ = 0;
+    KeyMap                   keymap_;
+    Box                      box_;
 
-    Elements _generateWidgets(const StatusOption &option)
+    Elements _generateWidgets() const
     {
-        std::string set = "◉";
-        std::string not_set = "○";
-        std::string no_value = " ";
-        Elements elements;
-        bool is_focused = Focused();
+        const char *set = "◉";
+        const char *not_set = "○";
+        const char *no_value = " ";
+        bool has_mask = mask().mask_value != StatusOption::Mask::NoMask;
+        bool mask_is_set = option_->status() & mask().mask_value;
+        Element indicator;
+        Element message = text(mask().what_to_display);
 
-        elements.reserve( option.masks.size() + option.masks.size() - 1);
-        for (size_t iCurrentIndex = 0; iCurrentIndex < option.masks.size(); ++iCurrentIndex)
-        {
-            const auto &iCurrentMask = option.masks[iCurrentIndex];
-            bool has_mask = iCurrentMask.mask_value != -1;
-            bool mask_is_set = *option.status & iCurrentMask.mask_value;
-            Element e;
-
-            if ( has_mask )
-                if ( mask_is_set )
-                    e = vtext(set + iCurrentMask.what_to_display);
-                else
-                    e = vtext(not_set + iCurrentMask.what_to_display);
+        if ( has_mask )
+            if ( mask_is_set )
+                indicator = text(set);
             else
-                e = vtext(no_value + iCurrentMask.what_to_display);
+                indicator = text(not_set);
+        else
+            indicator = text(no_value);
 
-            e |= notflex;
-            if ( is_focused && (iCurrentMask.mask_value != -1) &&
-                 (*option.current_mask == static_cast<int>(iCurrentIndex)) )
-                e |= inverted;
+        if ( has_mask )
+            message |= color( (mask_is_set) ? Color::Green : Color::Red ); // Only color if there is a mask
 
-            if ( !elements.empty() )
-                elements.emplace_back( filler() );
-            if ( !has_mask )
-                elements.emplace_back( e ); // No color because no value
-            else
-                elements.emplace_back( e | color( (mask_is_set) ? Color::Green : Color::Red ) );
-        }
-        return elements;
+        if ( hovered_ || Focused() )
+            message |= inverted;
+
+        return { indicator, message };
     }
 };
+
+Component InputBit(Ref<StatusOption> option, size_t mask_number)
+{
+    return Make<InputBitBase>( std::move(option), mask_number);
+}
 
 Component InputByte(Ref<InputByteOption> option)
 {
@@ -620,5 +586,11 @@ Component InputWord(Ref<InputWordOption> option)
 
 Component InputStatus(Ref<StatusOption> option)
 {
-    return Make<Status>( std::move(option) );
+    Components children;
+
+    children.reserve( option->masks.size() );
+    for (size_t count = 0; count < option().masks.size(); ++count)
+        children.emplace_back( InputBit(option, count) );
+
+    return Container::Horizontal( std::move(children) );
 }

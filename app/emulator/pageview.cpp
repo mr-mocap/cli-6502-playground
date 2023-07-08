@@ -111,7 +111,7 @@ PageView::PageView(std::shared_ptr<RamBusDeviceView> model,
     std::vector<Elements> grid_rows;
 
     grid_rows.reserve(16);
-    for (int line = 0, current_cell = 0; line < 16; ++line)
+    for (int line = 0; line < 16; ++line)
         grid_rows.emplace_back( generateLineWidgets(line) );
 
     if ( _in_edit_mode )
@@ -186,9 +186,6 @@ void PageView::affectCurrentByteInEditMode(Screen &screen, const Box &cursor)
 void PageView::affectCurrentByteInNonEditMode(Screen &screen, const Box &cursor)
 {
     // Translate to global coords and draw...
-    Pixel &pixel1 = screen.PixelAt( box_.x_min + cursor.x_min    , box_.y_min + cursor.y_min );
-    Pixel &pixel2 = screen.PixelAt( box_.x_min + cursor.x_min + 1, box_.y_min + cursor.y_min );
-
     screen.PixelAt( box_.x_min + cursor.x_min    , box_.y_min + cursor.y_min ).inverted = true;
     screen.PixelAt( box_.x_min + cursor.x_min + 1, box_.y_min + cursor.y_min ).inverted = true;
 }
