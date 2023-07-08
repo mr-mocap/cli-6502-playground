@@ -483,7 +483,10 @@ public:
 
     Element Render() override
     {
-        return hbox({ vbox( _generateWidgets() | reflect(box_) ), filler() }) | flex;
+        if ( our_mask_ == 0 )
+            return vbox( _generateWidgets() | reflect(box_) ); // Last one
+        else
+            return hbox({ filler(), vbox( _generateWidgets() | reflect(box_) ) }) | flex; // All others
     }
 
     bool Focusable() const final { return true; }
