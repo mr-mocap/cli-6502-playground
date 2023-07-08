@@ -484,7 +484,7 @@ public:
     Element Render() override
     {
         if ( our_mask_ == 0 )
-            return vbox( _generateWidgets() | reflect(box_) ); // Last one
+            return vbox( _generateWidgets() | reflect(box_) ); // First one
         else
             return hbox({ filler(), vbox( _generateWidgets() | reflect(box_) ) }) | flex; // All others
     }
