@@ -2,8 +2,7 @@
 #define REGISTERVIEW_HPP
 
 #include <QObject>
-#include "ftxui/component/component.hpp"          // for Make, Input
-#include "emulator/inputnumber.hpp"
+#include "ui/components/inputnumber.hpp"
 #include "emulator/olc6502.hpp"
 
 class RegisterView : public QObject

@@ -16,7 +16,6 @@ SOURCES += \
         emulator/disassembly.cpp \
         emulator/disassemblyview.cpp \
         emulator/ibusdevice.cpp \
-        emulator/inputnumber.cpp \
         emulator/instructionexecutor.cpp \
         emulator/memorypage.cpp \
         emulator/olc6502.cpp \
@@ -24,6 +23,7 @@ SOURCES += \
         emulator/rambusdevice.cpp \
         emulator/rambusdeviceview.cpp \
         emulator/registerview.cpp \
+        ui/components/inputnumber.cpp \
         io.cpp \
         main.cpp
 
@@ -41,7 +41,6 @@ HEADERS += \
     emulator/disassemblyview.hpp \
     emulator/flags.hpp \
     emulator/ibusdevice.hpp \
-    emulator/inputnumber.hpp \
     emulator/instructionexecutor.hpp \
     emulator/memorypage.hpp \
     emulator/olc6502.hpp \
@@ -50,6 +49,7 @@ HEADERS += \
     emulator/rambusdeviceview.hpp \
     emulator/registers.hpp \
     emulator/registerview.hpp \
+    ui/components/inputnumber.hpp \
     io.hpp
 
 include(FTXUI.pri)

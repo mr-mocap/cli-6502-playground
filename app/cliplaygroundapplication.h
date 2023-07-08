@@ -9,7 +9,7 @@
 #include "emulator/registerview.hpp"
 #include "emulator/memorypage.hpp"
 #include "emulator/disassembly.hpp"
-#include "emulator/inputnumber.hpp"
+#include "ui/components/inputnumber.hpp"
 #include <memory>
 #include <map>
 #include <vector>

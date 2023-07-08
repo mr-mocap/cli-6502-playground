@@ -1,9 +1,7 @@
 ﻿#include "cliplaygroundapplication.h"
 #include "ftxui/dom/node.hpp"
 #include "ftxui/dom/elements.hpp"
-#include "ftxui/component/component.hpp"
 #include "ftxui/component/loop.hpp"
-#include "emulator/inputnumber.hpp"
 #include <QTimer>
 #include <cstdlib>
 #include <functional>
