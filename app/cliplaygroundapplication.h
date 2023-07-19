@@ -10,6 +10,7 @@
 #include "emulator/memorypage.hpp"
 #include "emulator/disassembly.hpp"
 #include "ui/components/inputnumber.hpp"
+#include "ui/components/directorybrowser.hpp"
 #include <memory>
 #include <map>
 #include <vector>
@@ -34,6 +35,7 @@ public:
     InputWordOption              input_nmi_option;
     InputWordOption              input_reset_option;
     InputWordOption              input_irq_option;
+    InputDirectoryOption         load_file_option;
     ftxui::Component             memory_page_component;
     ftxui::Component             register_view_component;
     ftxui::Component             disassembly_component;
@@ -47,9 +49,15 @@ public:
     ftxui::Component             pause_button;
     ftxui::Component             next_instruction_button;
     ftxui::Component             reset_button;
+    ftxui::Component             load_file_button;
     ftxui::Component             ui_update_rate_dropdown;
+    ftxui::Component             main_tab;
+    ftxui::Component             main_container;
+    ftxui::Component             depth_0_renderer;
+    ftxui::Component             depth_1_renderer;
     ftxui::Component             renderer;
     ftxui::ScreenInteractive     screen{ ftxui::ScreenInteractive::Fullscreen() };
+    int                          main_tab_selection = 0;
 
 signals:
 
@@ -76,6 +84,8 @@ protected:
     void onRunButtonPressed();
     void onPauseButtonPressed();
     void onResetButtonPressed();
+    void onLoadFileButtonPressed();
+    void onLoadFileFinished(int button);
     bool catchEvent(ftxui::Event event);
     ftxui::Element generateView() const;
     void updateTimeSlice();

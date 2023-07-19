@@ -69,6 +69,17 @@ CLIPlaygroundApplication::CLIPlaygroundApplication(int &argc, char *argv[])
         computer.ram()->write( olc6502::IRQAddress    , LowByteOf( *input_irq_option.data ) );
         computer.ram()->write( olc6502::IRQAddress + 1, HighByteOf( *input_irq_option.data ) );
     };
+    load_file_option.finished = std::bind( &CLIPlaygroundApplication::onLoadFileFinished, this, std::placeholders::_1 );
+    if (const char *unix_home_env = std::getenv("HOME"); unix_home_env)
+        load_file_option.curent_directory() = unix_home_env;
+    else if (const char *windows_home_env = std::getenv("USERPROFILE"); windows_home_env)
+        load_file_option.curent_directory() = windows_home_env;
+    else
+    {
+        // Running under Windows perhaps?
+        // NOTE: What other environment variables can we look for?
+        load_file_option.curent_directory() = filesystem::current_path();
+    }
 }
 
 CLIPlaygroundApplication::~CLIPlaygroundApplication()
@@ -103,6 +114,7 @@ void CLIPlaygroundApplication::setup_ui()
     run_button = Button("Run", std::bind(&CLIPlaygroundApplication::onRunButtonPressed, this), ButtonOption::Border());
     pause_button = Button("Pause", std::bind(&CLIPlaygroundApplication::onPauseButtonPressed, this), ButtonOption::Border());
     reset_button = Button("Reset", std::bind(&CLIPlaygroundApplication::onResetButtonPressed, this), ButtonOption::Border());
+    load_file_button = Button("Load File...", std::bind(&CLIPlaygroundApplication::onLoadFileButtonPressed, this), ButtonOption::Border());
     ui_update_rate_dropdown = Dropdown(&_ui_update_rates_dropdown_display_strings, &_selected_ui_rate);
     nmi_vector   = InputWord( &input_nmi_option );
     reset_vector = InputWord( &input_reset_option );
@@ -120,14 +132,30 @@ void CLIPlaygroundApplication::setup_ui()
 
     disassembly_component = disassembly( &_disassembly_option );
 
-    renderer = Renderer( Container::Vertical({ Container::Horizontal({ memory_page_component,
-                                                                       disassembly_component,
-                                                                       Container::Vertical( { register_view_component,
-                                                                                              system_vectors } )
-                                                                     }),
-                                               Container::Horizontal({ step_button, next_instruction_button, run_button, pause_button, reset_button, ui_update_rate_dropdown }) }),
-                         std::bind( &CLIPlaygroundApplication::generateView, this )
-                       );
+    depth_0_renderer = Renderer( Container::Vertical({ Container::Horizontal({ memory_page_component,
+                                                                               disassembly_component,
+                                                                               Container::Vertical( { register_view_component,
+                                                                                                      system_vectors } )
+                                                                             }),
+                                                       Container::Horizontal({ step_button, next_instruction_button, run_button, pause_button, reset_button, load_file_button, ui_update_rate_dropdown }) }),
+                                 std::bind( &CLIPlaygroundApplication::generateView, this )
+                               );
+    depth_1_renderer = InputDirectoryBrowser( &load_file_option );
+    main_container = Container::Tab({ depth_0_renderer, depth_1_renderer }, &main_tab_selection);
+    renderer = Renderer(main_container, [&] {
+        Element document = depth_0_renderer->Render();
+
+        if (main_tab_selection == 1) {
+            int constant_width  = static_cast<int>(screen.dimx() * 0.8f);
+            int constant_height = static_cast<int>(screen.dimy() * 0.8f);
+
+            document = dbox({
+                document | dim,
+                depth_1_renderer->Render() | size(WIDTH, EQUAL, constant_width) | size(HEIGHT, EQUAL, constant_height) | clear_under | center,
+                            });
+        }
+        return document;
+    });
 }
 
 void CLIPlaygroundApplication::onStepButtonPressed()
@@ -184,6 +212,19 @@ void CLIPlaygroundApplication::onResetButtonPressed()
     computer.cpu()->reset();
     computer.stepInstruction();
     screen.PostEvent(Event::Custom);
+}
+
+void CLIPlaygroundApplication::onLoadFileButtonPressed()
+{
+    main_tab_selection = 1;
+    UpdateDirectoryBrowser(depth_1_renderer);
+    depth_1_renderer->TakeFocus();
+}
+
+void CLIPlaygroundApplication::onLoadFileFinished(int button)
+{
+    main_tab_selection = 0;
+    depth_0_renderer->TakeFocus();
 }
 
 bool CLIPlaygroundApplication::catchEvent(Event event)
@@ -245,6 +286,7 @@ Element CLIPlaygroundApplication::generateView() const
                                                                   run_button->Render(),
                                                                   pause_button->Render(),
                                                                   reset_button->Render(),
+                                                                  load_file_button->Render(),
                                                                   ui_update_rate_dropdown->Render() }) | size(HEIGHT, GREATER_THAN, 2)
                                                            })
                  );
