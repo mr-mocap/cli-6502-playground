@@ -60,7 +60,7 @@ protected:
 
         if ( filesystem::is_directory( new_path ) )
         {
-            option_->curent_directory = filesystem::absolute( new_path );
+            option_->curent_directory = filesystem::canonical( new_path );
             option_->curent_file->clear();
             synchronizeWithOption();
         }
