@@ -23,9 +23,11 @@ SOURCES += \
         emulator/rambusdevice.cpp \
         emulator/rambusdeviceview.cpp \
         emulator/registerview.cpp \
+        ui/components/directorybrowser.cpp \
         ui/components/inputnumber.cpp \
         io.cpp \
-        main.cpp
+        main.cpp \
+        ui/components/list.cpp
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin
@@ -49,7 +51,9 @@ HEADERS += \
     emulator/rambusdeviceview.hpp \
     emulator/registers.hpp \
     emulator/registerview.hpp \
+    ui/components/directorybrowser.hpp \
     ui/components/inputnumber.hpp \
-    io.hpp
+    io.hpp \
+    ui/components/list.hpp
 
 include(FTXUI.pri)
