@@ -223,6 +223,12 @@ void CLIPlaygroundApplication::onLoadFileButtonPressed()
 
 void CLIPlaygroundApplication::onLoadFileFinished(int button)
 {
+    if ( button == InputDirectoryOption::Ok )
+    {
+        filesystem::path file_to_load = load_file_option.curent_directory() / load_file_option.curent_file();
+
+        computer.loadProgram( QString::fromStdString( file_to_load.string() ) );
+    }
     main_tab_selection = 0;
     depth_0_renderer->TakeFocus();
 }
@@ -243,9 +249,6 @@ bool CLIPlaygroundApplication::catchEvent(Event event)
 int CLIPlaygroundApplication::mainLoop()
 {
     step_button->TakeFocus();
-#if 0
-    computer.loadProgram( <Exact path to a .PRG file> );
-#endif
     computer.stepInstruction();
 
     Component catch_app_events = CatchEvent(renderer,
