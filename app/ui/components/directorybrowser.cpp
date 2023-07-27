@@ -8,7 +8,6 @@
 
 using namespace ftxui;
 using namespace std;
-using namespace std::filesystem;
 
 class DirectoryBrowser : public ComponentBase {
 public:

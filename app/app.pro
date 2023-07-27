@@ -25,9 +25,9 @@ SOURCES += \
         emulator/registerview.cpp \
         ui/components/directorybrowser.cpp \
         ui/components/inputnumber.cpp \
+        ui/components/list.cpp \
         io.cpp \
-        main.cpp \
-        ui/components/list.cpp
+        main.cpp
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin
@@ -53,7 +53,7 @@ HEADERS += \
     emulator/registerview.hpp \
     ui/components/directorybrowser.hpp \
     ui/components/inputnumber.hpp \
-    io.hpp \
     ui/components/list.hpp
+    io.hpp
 
 include(FTXUI.pri)
