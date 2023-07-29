@@ -68,6 +68,7 @@ protected:
         {
             option_->curent_file = std::move(selected_item);
             SetActiveChild( ok_button );
+            ok_button->TakeFocus();
         }
     }
 
