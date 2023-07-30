@@ -54,21 +54,31 @@ void Computer::timerTimeout()
     stepClock();
 }
 
+void Computer::load(const MemoryBlock &mb)
+{
+    const int start = mb.first;
+    int start_address = mb.first;
+
+    for (uint8_t iCurrentByte : mb.second)
+        _memory.write(start_address++, iCurrentByte);
+}
+
 void Computer::loadProgram(QString path)
 {
-    std::optional<MemoryBlock> input = ReadFromFile( path );
+    std::optional<MemoryBlocks> input = ReadFromFile( path );
 
     if ( input )
     {
-        const int start         = input.value().first;
-              int start_address = input.value().first;
+        for (const auto &memory_block : input.value())
+        {
+            load( memory_block );
 
-        for ( uint8_t iCurrentByte : input.value().second )
-            _memory.write( start_address++, iCurrentByte );
+            const int load_address = memory_block.first;
 
-        // Set Reset Vector
-        _memory.write(0xFFFC, start & 0xFF);
-        _memory.write(0xFFFD, start >> 8);
+            // Set Reset Vector
+            _memory.write(0xFFFC, load_address & 0xFF);
+            _memory.write(0xFFFD, load_address >> 8);
+        }
 
         // Reset
         _cpu.reset();
