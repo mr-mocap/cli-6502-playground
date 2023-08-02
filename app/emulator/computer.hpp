@@ -6,6 +6,7 @@
 #include "olc6502.hpp"
 #include "bus.hpp"
 #include "rambusdevice.hpp"
+#include "io.hpp"
 
 
 class Computer : public QObject
@@ -42,6 +43,8 @@ private:
     Bus     _bus;
     RamBusDevice _memory;
     QTimer       _clock;
+
+    void load(const MemoryBlock &mb);
 
     Q_DISABLE_COPY(Computer)
 };

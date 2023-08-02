@@ -9,7 +9,8 @@
 
 using Bytes = std::vector<uint8_t>;
 using MemoryBlock = std::pair<int, Bytes>;
+using MemoryBlocks = std::vector<MemoryBlock>;
 
-std::optional<MemoryBlock> ReadFromFile(QString filename);
+std::optional<MemoryBlocks> ReadFromFile(QString filename);
 
 #endif // IO_HPP

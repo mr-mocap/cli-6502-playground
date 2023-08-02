@@ -8,7 +8,6 @@
 
 using namespace ftxui;
 using namespace std;
-using namespace std::filesystem;
 
 class DirectoryBrowser : public ComponentBase {
 public:
@@ -56,13 +55,20 @@ public:
 protected:
     void onListItemSelected()
     {
-        filesystem::path new_path = option_->curent_directory() / files_in_dir[ currently_selected_file_in_dir ];
+        filesystem::path selected_item = files_in_dir[ currently_selected_file_in_dir ];
+        filesystem::path new_path = option_->curent_directory() / selected_item;
 
         if ( filesystem::is_directory( new_path ) )
         {
             option_->curent_directory = filesystem::canonical( new_path );
             option_->curent_file->clear();
             synchronizeWithOption();
+        }
+        else if ( filesystem::is_regular_file( new_path ) )
+        {
+            option_->curent_file = std::move(selected_item);
+            SetActiveChild( ok_button );
+            ok_button->TakeFocus();
         }
     }
 

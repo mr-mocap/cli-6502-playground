@@ -6,7 +6,8 @@
 #include <utility>
 #include <QFile>
 
-using ReadMemoryBlockFunctionPtr_t =  std::optional<MemoryBlock> (*)(QIODevice *);
+using ReadMemoryBlockFunctionPtr_t =  std::optional<MemoryBlocks> (*)(QIODevice *);
+using FileTypeTable_t = std::map<QString, ReadMemoryBlockFunctionPtr_t>;
 
 #if 0
 class IOInterface
@@ -15,31 +16,6 @@ public:
     virtual void ReadInputFrom(QIODevice *device) = 0;
 };
 
-
-class IOPrg : public IOInterface
-{
-public:
-    using Bytes = std::vector<uint8_t>;
-
-    void ReadInputFrom(QIODevice *device) override;
-
-protected:
-    std::map<int, Bytes> _data;
-};
-
-class IOSimpleHex : public IOInterface
-{
-public:
-    using Bytes = std::vector<uint8_t>;
-
-    // We expect lines of the form: XXXX:( XX)*
-    // A 16-bit hex addres followed by a colon folowed by one or more 2-digit
-    // hex chars (a byte value).
-    void ReadInputFrom(QIODevice *device) override;
-
-protected:
-    std::map<int, Bytes> _data;
-};
 
 class IOSRecord : public IOInterface
 {
@@ -82,59 +58,6 @@ namespace
 
 static constexpr int CharsPerByte = 2;
 
-static constexpr std::string_view EatWhiteSpace(std::string_view data)
-{
-    while ( !data.empty() && std::isblank( data.front() ) )
-        data.remove_prefix( 1 );
-    return data;
-}
-
-static constexpr inline bool IsDecimalDigit(char digit)
-{
-    return (digit >= '0') && (digit <= '9');
-}
-
-static constexpr inline bool IsHexDigit(char digit)
-{
-    return (digit >= 'A') && (digit <= 'F');
-}
-
-static int HexDigitsBigEndianToDecimal(std::string_view hex_digits_in_ascii)
-{
-    int value = 0;
-
-    if ( hex_digits_in_ascii.empty() )
-        return -1;
-
-    for (char iCurrentHexDigit : hex_digits_in_ascii)
-    {
-        if ( IsDecimalDigit(iCurrentHexDigit) )
-            iCurrentHexDigit -= '0';
-        else if ( IsHexDigit(iCurrentHexDigit) )
-            iCurrentHexDigit = iCurrentHexDigit - 'A' + 10;
-        else
-            return -1;
-
-        value = (value << 4) | (iCurrentHexDigit & 0x0F);
-    }
-    return value;
-}
-
-static inline bool BeginsWith8BitHexValue(std::string_view data)
-{
-    return ( data.size() >= 2 ) && std::isxdigit( data[0] ) && std::isxdigit( data[1] );
-}
-
-static inline int Read8BitHexValue(std::string_view data)
-{
-    return HexDigitsBigEndianToDecimal( data );
-}
-
-static inline int Read16BitHexValue(std::string_view data)
-{
-    return HexDigitsBigEndianToDecimal( data );
-}
-
 static inline int Read24BitHexValue(std::string_view data)
 {
     return HexDigitsBigEndianToDecimal( data );
@@ -160,60 +83,6 @@ static IOSRecord::Bytes ReadData(std::string_view data)
     return rest;
 }
 
-}
-
-static std::optional<std::pair<int, IOSimpleHex::Bytes>> ReadSimpleHexLine(std::string_view data)
-{
-    if ( data.size() < 4 )
-        return std::nullopt;
-
-    std::string_view address = data.substr( 0, 4 );
-    int value = Read16BitHexValue( address );
-
-    // Expect ':'
-    if ( data[4] != ':' )
-        return std::nullopt;
-
-    // Remove the address and ':'
-    data = data.substr( 5 );
-
-    std::vector<uint8_t> bytes;
-
-    bytes.reserve(16); // Expect no more than 16 values (but there could be)
-
-    while ( !(data = EatWhiteSpace( data )).empty() && BeginsWith8BitHexValue( data ) )
-    {
-        int byte_value = Read8BitHexValue( data );
-
-        if ( byte_value == -1 )
-            break;
-
-        bytes.push_back( static_cast<uint8_t>(byte_value) );
-    }
-    return { std::make_pair( value, bytes ) };
-}
-
-void IOSimpleHex::ReadInputFrom(QIODevice *device)
-{
-    // We expect lines of the form: XXXX:( XX)*
-    // A 16-bit address followed by a colon folowed by one or more 2-digit
-    // hex chars (a byte value).
-    _data.clear();
-
-    while (true)
-    {
-        QByteArray line = device->readLine();
-
-        if ( line.size() == 0 )
-            break;
-
-        auto input_data = ReadSimpleHexLine( std::string_view( line.data(), line.size() ) );
-
-        if ( !input_data.has_value() )
-            break;
-
-        _data.insert( std::move( input_data.value() ) );
-    }
 }
 
 void IOSRecord::ReadInputFrom(QIODevice *device)
@@ -501,28 +370,6 @@ IOSRecord::RecordData IOSRecord::readRecordType9(std::string_view data)
 
     return {};
 }
-
-void IOPrg::ReadInputFrom(QIODevice *device)
-{
-    // ASSUME: 16-bit little-endian address first, with the rest of the bytes
-    //         following.
-    _data.clear();
-
-    QByteArray temp_data = device->read(2);
-
-    if ( temp_data.size() != 2 )
-        return;
-
-    bool ok = false;
-    int  a = temp_data.toInt( &ok );
-
-    if ( !ok )
-        return;
-
-    temp_data = device->readAll();
-
-    _data[a] = Bytes{ temp_data.begin(), temp_data.end() };
-}
 #endif
 
 namespace
@@ -535,15 +382,17 @@ QString SuffixOf(const QString &s)
     return (position == -1 ) ? QString() : s.mid( position );
 }
 
-std::optional<MemoryBlock> ReturnOnlyError(QIODevice *device)
+std::optional<MemoryBlocks> ReturnOnlyError(QIODevice *device)
 {
     Q_UNUSED(device)
 
     return {};
 }
 
-std::optional<MemoryBlock> ReadPRGFrom(QIODevice *device)
+std::optional<MemoryBlocks> ReadPRGFrom(QIODevice *device)
 {
+    // ASSUME: 16-bit little-endian address first, with the rest of the bytes
+    //         following.
     QByteArray temp_data = device->read(2);
 
     if ( temp_data.size() != 2 )
@@ -556,14 +405,125 @@ std::optional<MemoryBlock> ReadPRGFrom(QIODevice *device)
     if ( temp_data.isEmpty() )
         return {};
 
-    return MemoryBlock{ address, Bytes( temp_data.begin(), temp_data.end() ) };
+    return MemoryBlocks{ MemoryBlock{ address, Bytes{ temp_data.begin(), temp_data.end() } } };
 }
 
-std::map<QString, ReadMemoryBlockFunctionPtr_t> FileTypeTable{ { ".prg", &ReadPRGFrom } };
+static constexpr std::string_view EatWhiteSpace(std::string_view data)
+{
+    while ( !data.empty() && std::isblank( data.front() ) )
+        data.remove_prefix( 1 );
+    return data;
+}
+
+static inline bool BeginsWith8BitHexValue(std::string_view data)
+{
+    return ( data.size() >= 2 ) && std::isxdigit( data[0] ) && std::isxdigit( data[1] );
+}
+
+static constexpr inline bool IsDecimalDigit(char digit)
+{
+    return (digit >= '0') && (digit <= '9');
+}
+
+static constexpr inline bool IsHexDigit(char digit)
+{
+    return (digit >= 'A') && (digit <= 'F');
+}
+
+static int HexDigitsBigEndianToDecimal(std::string_view hex_digits_in_ascii)
+{
+    int value = 0;
+
+    if ( hex_digits_in_ascii.empty() )
+        return -1;
+
+    for (char iCurrentHexDigit : hex_digits_in_ascii)
+    {
+        if ( IsDecimalDigit(iCurrentHexDigit) )
+            iCurrentHexDigit -= '0';
+        else if ( IsHexDigit(iCurrentHexDigit) )
+            iCurrentHexDigit = iCurrentHexDigit - 'A' + 10;
+        else
+            return -1;
+
+        value = (value << 4) | (iCurrentHexDigit & 0x0F);
+    }
+    return value;
+}
+
+static inline int Read8BitHexValue(std::string_view data)
+{
+    return HexDigitsBigEndianToDecimal( data );
+}
+
+static inline int Read16BitHexValue(std::string_view data)
+{
+    return HexDigitsBigEndianToDecimal( data );
+}
+
+static std::optional<MemoryBlock> ReadSimpleHexLine(std::string_view data)
+{
+    if ( data.size() < 4 )
+        return std::nullopt;
+
+    std::string_view address = data.substr( 0, 4 );
+    int value = Read16BitHexValue( address );
+
+    // Expect ':'
+    if ( data[4] != ':' )
+        return std::nullopt;
+
+    // Remove the address and ':'
+    data = data.substr( 5 );
+
+    std::vector<uint8_t> bytes;
+
+    bytes.reserve(16); // Expect no more than 16 values (but there could be)
+
+    while ( !(data = EatWhiteSpace( data )).empty() && BeginsWith8BitHexValue( data ) )
+    {
+        int byte_value = Read8BitHexValue( data );
+
+        if ( byte_value == -1 )
+            break;
+
+        bytes.push_back( static_cast<uint8_t>(byte_value) );
+    }
+    return { std::make_pair( value, bytes ) };
+}
+
+std::optional<MemoryBlocks> ReadSimpleHexFrom(QIODevice *device)
+{
+    // We expect lines of the form: XXXX:( XX)*
+    // A 16-bit address followed by a colon folowed by one or more 2-digit
+    // hex chars (a byte value).
+    MemoryBlocks data;
+
+    while (true)
+    {
+        QByteArray line = device->readLine();
+
+        if ( line.isEmpty() )
+            break;
+
+        auto input_data = ReadSimpleHexLine( std::string_view( line.data(), line.size() ) );
+
+        if ( !input_data.has_value() )
+            break;
+
+        data.emplace_back( input_data.value() );
+    }
+    return { data };
+}
+
+FileTypeTable_t FileTypeTable{
+    { QStringLiteral(".prg"), &ReadPRGFrom },
+    { QStringLiteral(".shex"), &ReadSimpleHexFrom }
+};
 
 }
 
-std::optional<MemoryBlock> ReadFromFile(QString filename)
+std::optional<MemoryBlocks> ReadFromFile(QString filename)
 {
     if ( !QFile::exists( filename ) )
         return {};

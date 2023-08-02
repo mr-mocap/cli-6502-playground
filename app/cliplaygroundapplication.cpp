@@ -71,9 +71,9 @@ CLIPlaygroundApplication::CLIPlaygroundApplication(int &argc, char *argv[])
     };
     load_file_option.finished = std::bind( &CLIPlaygroundApplication::onLoadFileFinished, this, std::placeholders::_1 );
     if (const char *unix_home_env = std::getenv("HOME"); unix_home_env)
-        load_file_option.curent_directory() = unix_home_env;
+        load_file_option.curent_directory() = filesystem::path(unix_home_env);
     else if (const char *windows_home_env = std::getenv("USERPROFILE"); windows_home_env)
-        load_file_option.curent_directory() = windows_home_env;
+        load_file_option.curent_directory() = filesystem::path(windows_home_env);
     else
     {
         // Running under Windows perhaps?
