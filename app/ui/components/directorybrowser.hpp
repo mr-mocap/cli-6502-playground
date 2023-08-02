@@ -13,6 +13,7 @@ struct InputDirectoryOption {
 
     ftxui::Ref<std::filesystem::path> curent_directory;
     ftxui::Ref<std::filesystem::path> curent_file;
+    ftxui::Ref<bool>                  show_hidden_files = false;
 };
 
 ftxui::Component InputDirectoryBrowser(ftxui::Ref<InputDirectoryOption> option);

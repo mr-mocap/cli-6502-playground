@@ -11,6 +11,8 @@ using namespace std;
 
 class DirectoryBrowser : public ComponentBase {
 public:
+    using DirEntryComparator = std::function<bool (const filesystem::directory_entry &, const filesystem::directory_entry &)>;
+
     DirectoryBrowser(Ref<InputDirectoryOption> option)
         :
         option_( std::move(option) ),
@@ -30,10 +32,42 @@ public:
     /* Generates an internal list of files in the directory of the option */
     void synchronizeWithOption()
     {
+        auto default_dir_entry_comparator = [](const filesystem::directory_entry &left,
+                                               const filesystem::directory_entry &right)
+        {
+            if ( left.is_directory() != right.is_directory() )
+                return left.is_directory();
+            
+            return left.path().filename() < right.path().filename();
+        };
+
         files_in_dir.clear();
         files_in_dir.emplace_back("..");
+
+        std::vector<filesystem::directory_entry> entries;
+
         for (auto const &dir_entry : filesystem::directory_iterator( option_->curent_directory() ))
-            files_in_dir.push_back( dir_entry.path().filename().string() );
+        {
+            if ( dir_entry.path().filename().string().front() == '.' )
+            {
+                if ( option_->show_hidden_files() )
+                    entries.push_back( dir_entry );
+            }
+            else
+                entries.push_back( dir_entry );
+        }
+        
+        // Sort the entries
+        std::sort( entries.begin(), entries.end(), default_dir_entry_comparator );
+
+        // Add the entries...
+        for (auto const &dir_entry : entries)
+        {
+            if ( dir_entry.is_directory() )
+                files_in_dir.push_back( dir_entry.path().filename().string() + '/' );
+            else
+                files_in_dir.push_back( dir_entry.path().filename().string() );
+        }
     }
 
     // Component implementation:
@@ -93,7 +127,7 @@ protected:
         elements.reserve( files_in_dir.size() );
         for (auto const &filename : files_in_dir )
             elements.emplace_back( text(filename) );
-                return elements;
+        return elements;
     }
 
     Box                       box_;
