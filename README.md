@@ -81,7 +81,10 @@ Displays the value contained in the processor's hardware reset jump vector (loca
 
 ## How do I load programs into memory?
 
-Unfortunately, at the moment you have to modify the `CLIPlaygroundApplication::mainLoop()` method to load a `.prg` file.  Just give the path to the file to the `loadProgram()` method.
+Just select the "Load Program..." button and it will bring up a directory browser.  Select
+a directory to descend into that directory.  Select a file to setup for loading it.  Just press the "Select" button to load the entry.
+
+Currently, only Commodore .PRG files are loadable, with plans for loading Motorola S-Record files.
 
 Currently, the processor's reset jump vector will be set to the load address after the file is loaded, thus making it easy to just load a program and begin executing.
 
