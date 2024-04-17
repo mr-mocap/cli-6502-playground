@@ -2,7 +2,7 @@
 #include <QTimer>
 #include <sstream>
 
-#include "io.hpp"
+#include "io/io.hpp"
 
 
 Computer::Computer(QObject *parent) : QObject(parent)

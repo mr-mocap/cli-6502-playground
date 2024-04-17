@@ -26,9 +26,9 @@ SOURCES += \
         ui/components/directorybrowser.cpp \
         ui/components/inputnumber.cpp \
         ui/components/list.cpp \
-        QSRecordStream.cpp \
-        srecord.cpp \
-        io.cpp \
+        io/QSRecordStream.cpp \
+        io/srecord.cpp \
+        io/io.cpp \
         main.cpp
 
 # Default rules for deployment.
@@ -56,9 +56,9 @@ HEADERS += \
     ui/components/directorybrowser.hpp \
     ui/components/inputnumber.hpp \
     ui/components/list.hpp \
-    memory_block.hpp \
-    srecord.hpp \
-    QSRecordStream.hpp \
-    io.hpp
+    io/memory_block.hpp \
+    io/srecord.hpp \
+    io/QSRecordStream.hpp \
+    io/io.hpp
 
 include(FTXUI.pri)

@@ -6,7 +6,7 @@
 #include "olc6502.hpp"
 #include "bus.hpp"
 #include "rambusdevice.hpp"
-#include "io.hpp"
+#include "io/io.hpp"
 
 
 class Computer : public QObject
