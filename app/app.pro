@@ -26,6 +26,8 @@ SOURCES += \
         ui/components/directorybrowser.cpp \
         ui/components/inputnumber.cpp \
         ui/components/list.cpp \
+        QSRecordStream.cpp \
+        srecord.cpp \
         io.cpp \
         main.cpp
 
@@ -53,7 +55,10 @@ HEADERS += \
     emulator/registerview.hpp \
     ui/components/directorybrowser.hpp \
     ui/components/inputnumber.hpp \
-    ui/components/list.hpp
+    ui/components/list.hpp \
+    memory_block.hpp \
+    srecord.hpp \
+    QSRecordStream.hpp \
     io.hpp
 
 include(FTXUI.pri)
