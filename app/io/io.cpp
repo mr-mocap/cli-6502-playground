@@ -265,7 +265,7 @@ FileTypeTable_t FileTypeTable{
 
 }
 
-std::optional<MemoryBlocks> ReadFromFile(QString filename)
+OptionalMemoryBlocks ReadFromFile(QString filename)
 {
     if ( !QFile::exists( filename ) )
         return {};

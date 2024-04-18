@@ -5,6 +5,8 @@
 
 #include <QString>
 
-std::optional<MemoryBlocks> ReadFromFile(QString filename);
+using OptionalMemoryBlocks = std::optional<MemoryBlocks>;
+
+OptionalMemoryBlocks ReadFromFile(QString filename);
 
 #endif // IO_HPP

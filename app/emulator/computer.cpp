@@ -56,7 +56,6 @@ void Computer::timerTimeout()
 
 void Computer::load(const MemoryBlock &mb)
 {
-    const int start = mb.first;
     int start_address = mb.first;
 
     for (uint8_t iCurrentByte : mb.second)

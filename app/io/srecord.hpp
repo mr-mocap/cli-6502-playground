@@ -29,7 +29,7 @@ struct SRecord
     static const int AddressOffset = 4;
     static const int DataOffsetWith16BitAddress = AddressOffset + (AddressLength16Bit * 2);
     static const int DataOffsetWith24BitAddress = AddressOffset + (AddressLength24Bit * 2);
-    static const int DataOffsetWith32BitAddress = AddressOffset + (AddressLength24Bit * 2);
+    static const int DataOffsetWith32BitAddress = AddressOffset + (AddressLength32Bit * 2);
 
     static const int MaxRecordSize = StartOfRecordSize + RecordTypeSize + (ByteCountSize + MaxAddressSize + MaxDataSize + ChecksumSize) * 2;
 
