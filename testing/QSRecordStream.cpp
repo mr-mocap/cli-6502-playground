@@ -748,7 +748,7 @@ static int WritePrimitiveRecord(SRecord::Buffer &buffer, const SRecord &record, 
     const int    value_in_byte_count_field = bytes_in_address + record.data.size() + bytes_in_checksum;
     const int    bytes_in_checksum_calculation = bytes_in_byte_count + bytes_in_address + record.data.size();
 
-    snprintf( buffer.data(), buffer.size(), "S%c%.2X%.4X",
+    snprintf( buffer.data(), buffer.size(), "S%c%02X%04X",
               record.type + '0',
               value_in_byte_count_field, // Byte count (2-byte address + 1-byte checksum)
               record.address);
@@ -758,12 +758,12 @@ static int WritePrimitiveRecord(SRecord::Buffer &buffer, const SRecord &record, 
         size_t buffer_index_from_byte_number = 2 + (bytes_in_byte_count * 2) + (bytes_in_address * 2) + byte_number_in_data * 2;
 
         // We use 3 bytes because it is two hex chars PLUS a '\n'
-        snprintf( &buffer[ buffer_index_from_byte_number ], 3, "%.2X", record.data[byte_number_in_data] );
+        snprintf( &buffer[ buffer_index_from_byte_number ], 3, "%02X", record.data[byte_number_in_data] );
     }
     uint8_t checksum = CalculateChecksumFromHexData( std::string_view( &buffer[2], bytes_in_checksum_calculation * 2 ) );
     int length_up_to_checksum = 2 + (bytes_in_checksum_calculation * 2);
 
-    snprintf( &buffer[length_up_to_checksum], 3, "%.2X", checksum);
+    snprintf( &buffer[length_up_to_checksum], 3, "%02X", checksum);
     return length_up_to_checksum + 2;
 }
 
