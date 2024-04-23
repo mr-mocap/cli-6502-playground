@@ -71,8 +71,11 @@ void Computer::loadProgram(QString path)
         for (const auto &memory_block : input.value().data)
         {
             load( memory_block );
+        }
 
-            const int load_address = memory_block.first;
+        if ( input->hasValidExecutionAddress() )
+        {
+            const uint32_t load_address = input.value().begin_execution_address;
 
             // Set Reset Vector
             _memory.write(0xFFFC, load_address & 0xFF);
