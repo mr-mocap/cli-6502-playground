@@ -740,6 +740,7 @@ static OptionalSRecord ReadSRecordType9(std::string_view data)
 
     return SRecord(9, address, ReadData(data_part), checksum_in_record);
 }
+
 // Returns length written
 static int WritePrimitiveRecord(SRecord::Buffer &buffer, const SRecord &record, const int bytes_in_address)
 {
@@ -934,6 +935,7 @@ OptionalSRecord QSRecordStream::read()
 
     if ( !record.has_value() )
         return std::nullopt;
+
     return record;
 }
 
@@ -948,7 +950,10 @@ OptionalSRecords QSRecordStream::readAll()
         if ( single_record.has_value() )
             records.push_back( single_record.value() );
     }
-    return { records };
+    if (records.empty())
+        return std::nullopt;
+
+    return { std::move(records) };
 }
 
 OptionalSRecord QSRecordStream::ReadSRecord(std::string_view data)

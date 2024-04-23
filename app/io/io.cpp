@@ -7,7 +7,7 @@
 #include <utility>
 #include <QFile>
 
-using ReadMemoryBlockFunctionPtr_t =  std::optional<MemoryBlocks> (*)(QIODevice *);
+using ReadMemoryBlockFunctionPtr_t =  OptionalProgram (*)(QIODevice *);
 using FileTypeTable_t = std::map<QString, ReadMemoryBlockFunctionPtr_t>;
 
 
@@ -77,30 +77,34 @@ QString SuffixOf(const QString &s)
     return (position == -1 ) ? QString() : s.mid( position );
 }
 
-std::optional<MemoryBlocks> ReturnOnlyError(QIODevice *device)
+OptionalProgram ReturnOnlyError(QIODevice *device)
 {
     Q_UNUSED(device)
 
     return {};
 }
 
-std::optional<MemoryBlocks> ReadPRGFrom(QIODevice *device)
+OptionalProgram ReadPRGFrom(QIODevice *device)
 {
     // ASSUME: 16-bit little-endian address first, with the rest of the bytes
     //         following.
     QByteArray temp_data = device->read(2);
 
     if ( temp_data.size() != 2 )
-        return {};
+        return std::nullopt;
 
-    int address = temp_data[0] | (temp_data[1] << 8);
+    uint32_t address = temp_data[0] | (temp_data[1] << 8);
 
     temp_data = device->readAll();
 
     if ( temp_data.isEmpty() )
-        return {};
+        return std::nullopt;
 
-    return MemoryBlocks{ MemoryBlock{ address, Bytes{ temp_data.begin(), temp_data.end() } } };
+    return { Program{ address, MemoryBlocks{
+                MemoryBlock{ address, Bytes{ temp_data.begin(), temp_data.end() } }
+                                           }
+                    }
+           };
 }
 
 static constexpr std::string_view EatWhiteSpace(std::string_view data)
@@ -109,7 +113,7 @@ static constexpr std::string_view EatWhiteSpace(std::string_view data)
         data.remove_prefix( 1 );
     return data;
 }
-static std::optional<MemoryBlock> ReadSimpleHexLine(std::string_view data)
+static OptionalMemoryBlock ReadSimpleHexLine(std::string_view data)
 {
     if ( data.size() < 4 )
         return std::nullopt;
@@ -140,7 +144,7 @@ static std::optional<MemoryBlock> ReadSimpleHexLine(std::string_view data)
     return { std::make_pair( value, bytes ) };
 }
 
-std::optional<MemoryBlocks> ReadSimpleHexFrom(QIODevice *device)
+static OptionalProgram ReadSimpleHexFrom(QIODevice *device)
 {
     // We expect lines of the form: XXXX:( XX)*
     // A 16-bit address followed by a colon folowed by one or more 2-digit
@@ -161,119 +165,115 @@ std::optional<MemoryBlocks> ReadSimpleHexFrom(QIODevice *device)
 
         data.emplace_back( input_data.value() );
     }
-    return { data };
+    return { Program{ std::move(data) } };
 }
 
 namespace SRecord_IO
 {
 
-std::optional<MemoryBlocks> ReadSRecordFrom(QIODevice *device)
+inline bool SRecordFoundIn(const SRecords &records, SRecords::const_iterator iter)
 {
-#if 0
-    char buffer[514 + 1]; // 256 bytes of data plus first two bytes of any record. +1 is for the appended '\0'.
-    Records local_records;
+    return iter != records.end();
+}
 
-    while (true)
-    {
-        int line_length =  device->readLine( buffer, sizeof buffer );
+inline size_t CountSRecordsOfType(const SRecords &records, const int type)
+{
+    return std::count_if(records.begin(), records.end(), [&](const SRecord &iCurrentRecord) { return iCurrentRecord.type == type; });
+}
 
-        if ( line_length == -1 )
-            break;
+inline SRecords::const_iterator FindSRecordOfType(const SRecords &records, const int record_type)
+{
+    return find_if(records.begin(), records.end(), [&](const SRecord &iCurrentRecord) { return iCurrentRecord.type == record_type; } );
+}
 
-        // We have data in buffer
-        int type = -2, byte_count = 0;
-        std::string_view buffer_view(buffer, line_length);
+inline auto SRecordsOfType(const SRecords &records, const int type) -> std::pair<SRecords::const_iterator, SRecords::const_iterator>
+{
+    return std::equal_range(records.begin(), records.end(),
+                            SRecord{ type },
+                            [&](const SRecord &iCurrentRecord, const SRecord &compare_to)
+                            {
+                                return iCurrentRecord.type == compare_to.type;
+                            }
+                           );
+}
 
-        if ( buffer_view.empty() )
-            return { };
-
-        if ( !readRecordStart(buffer_view) )
-            return { };
-
-        if ( (type = readRecordType(buffer_view)) == -1 )
-            return { };
-
-        if ( (byte_count = readRecordByteCount(buffer_view)) == -1 )
-            return { };
-
-        if ( line_length < (byte_count * CharsPerByte) ) // Two hex chars per "byte", remember
-            return { };
-
-        OptionalRecord data = std::nullopt;
-
-        switch (type)
-        {
-        case 0:
-            data = readRecordType0( buffer_view.substr( 4, byte_count * 2) );
-            break;
-        case 1:
-            data = readRecordType1( buffer_view.substr( 4, byte_count * 2) );
-            break;
-        case 2:
-            data = readRecordType2( buffer_view.substr( 4, byte_count * 2) );
-            break;
-        case 3:
-            data = readRecordType3( buffer_view.substr( 4, byte_count * 2) );
-            break;
-        case 4:
-            data = readRecordType4( buffer_view.substr( 4, byte_count * 2) );
-            break;
-        case 5:
-            data = readRecordType5( buffer_view.substr( 4, byte_count * 2) );
-            break;
-        case 6:
-            data = readRecordType6( buffer_view.substr( 4, byte_count * 2) );
-            break;
-        case 7:
-            data = readRecordType7( buffer_view.substr( 4, byte_count * 2) );
-            break;
-        case 8:
-            data = readRecordType8( buffer_view.substr( 4, byte_count * 2) );
-            break;
-        case 9:
-            data = readRecordType9( buffer_view.substr( 4, byte_count * 2) );
-            break;
-        default:
-            break;
-        }
-        if ( data.has_value() )
-            local_records.push_back( data.value() );
-    }
-#if 0
-    if ( !local_records.empty() )
-        records = std::move(local_records);
-#endif
-#else
+OptionalSRecords ReadSRecords(QIODevice *device)
+{
     QSRecordStream stream(device);
     OptionalSRecords records = stream.readAll();
 
+    return records;
+}
+
+OptionalProgram ReadSRecordsFrom(QIODevice *device)
+{
+    OptionalSRecords records = ReadSRecords(device);
+
     if ( !records.has_value() )
-        return MemoryBlocks();
+        return std::nullopt;
 
-    return { ToMemoryBlocks( records.value() ) };
-#endif
+    return { Program{ ToMemoryBlocks( records.value() ) } };
+}
 
+OptionalProgram ReadS19RecordsFrom(QIODevice *device)
+{
+    OptionalSRecords records = ReadSRecords(device);
+
+    if (!records.has_value())
+        return std::nullopt;
+
+    // Sort records in increasing order of:
+    // 1: type
+    // 2: address
+    std::stable_sort(records.value().begin(), records.value().end(),
+              [](const SRecord &left, const SRecord &right)
+              {
+                  if (left.type < right.type)
+                      return true;
+                  return (left.address < right.address);
+              });
+
+    // Look for records S0, S1, S5 (optional), S9
+    auto s0 = FindSRecordOfType(records.value(), 0);
+    auto s0_count = CountSRecordsOfType(records.value(), 0);
+
+    if (s0_count != 1)
+        return std::nullopt;
+
+    auto [s1_begin, s1_end] = SRecordsOfType(records.value(), 1);
+
+    if (!SRecordFoundIn(records.value(), s1_begin))
+        return std::nullopt;
+
+    auto s9 = FindSRecordOfType(records.value(), 9);
+    auto s9_count = CountSRecordsOfType(records.value(), 9);
+
+    if (s9_count != 1)
+        return std::nullopt;
+
+    return { Program{ s9->address, ToMemoryBlocks(s1_begin, s1_end) } };
 }
 
 }
 
 FileTypeTable_t FileTypeTable{
-    { QStringLiteral(".prg"), &ReadPRGFrom },
+    { QStringLiteral(".prg"),  &ReadPRGFrom },
     { QStringLiteral(".shex"), &ReadSimpleHexFrom },
-    { QStringLiteral(".srec"), &SRecord_IO::ReadSRecordFrom }
+    { QStringLiteral(".srec"), &SRecord_IO::ReadSRecordsFrom },
+    { QStringLiteral(".s19"),  &SRecord_IO::ReadS19RecordsFrom }
 };
 
 }
 
-OptionalMemoryBlocks ReadFromFile(QString filename)
+OptionalProgram ReadFromFile(QString filename)
 {
     if ( !QFile::exists( filename ) )
-        return {};
+        return std::nullopt;
 
     QFile file{ filename };
 
     if ( !file.open( QIODevice::ReadOnly ) )
-        return {};
+        return std::nullopt;
 
     QString suffix = SuffixOf( filename );
 

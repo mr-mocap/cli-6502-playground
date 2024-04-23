@@ -35,8 +35,10 @@ struct SRecord
 
     using Buffer = std::array<char, MaxRecordSize + 1>; // This includes room for a '\0'
 
-    SRecord(int t, uint32_t a, const Bytes &b, uint8_t c) : type(t), address(a), data(b), checksum(c) { }
-    SRecord(int t, uint32_t a, const Bytes &b) : type(t), address(a), data(b) { }
+    SRecord() = default;
+    explicit SRecord(int t) : type(t) { }
+    explicit SRecord(int t, uint32_t a, const Bytes &b, uint8_t c) : type(t), address(a), data(b), checksum(c) { }
+    explicit SRecord(int t, uint32_t a, const Bytes &b) : type(t), address(a), data(b) { }
 
     int      type = 0;
     uint32_t address = 0;
@@ -54,3 +56,4 @@ inline MemoryBlock ToMemoryBlock(const SRecord &record)
 }
 
 MemoryBlocks ToMemoryBlocks(const SRecords &records);
+MemoryBlocks ToMemoryBlocks(SRecords::const_iterator begin_range, SRecords::const_iterator end_range);

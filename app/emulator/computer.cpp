@@ -64,11 +64,11 @@ void Computer::load(const MemoryBlock &mb)
 
 void Computer::loadProgram(QString path)
 {
-    std::optional<MemoryBlocks> input = ReadFromFile( path );
+    OptionalProgram input = ReadFromFile( path );
 
     if ( input )
     {
-        for (const auto &memory_block : input.value())
+        for (const auto &memory_block : input.value().data)
         {
             load( memory_block );
 
