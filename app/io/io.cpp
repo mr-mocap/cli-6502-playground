@@ -1,5 +1,5 @@
-#include "io.hpp"
-#include "QSRecordStream.hpp"
+#include "io/io.hpp"
+#include "io/SRecord/QSRecordStream.hpp"
 #include <iterator>
 #include <algorithm>
 #include <optional>

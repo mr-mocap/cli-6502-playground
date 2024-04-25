@@ -1,7 +1,7 @@
 #ifndef QSRECORDSTREAM_HPP
 #define QSRECORDSTREAM_HPP
 
-#include "srecord.hpp"
+#include "io/SRecord/srecord.hpp"
 
 #include <string_view>
 

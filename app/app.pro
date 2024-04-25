@@ -4,6 +4,10 @@ CONFIG += c++17
 CONFIG += console
 CONFIG -= app_bundle
 
+APPDIR = $$PWD
+
+INCLUDEPATH += $$APPDIR
+
 # You can make your code fail to compile if it uses deprecated APIs.
 # In order to do so, uncomment the following line.
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
@@ -26,8 +30,8 @@ SOURCES += \
         ui/components/directorybrowser.cpp \
         ui/components/inputnumber.cpp \
         ui/components/list.cpp \
-        io/QSRecordStream.cpp \
-        io/srecord.cpp \
+	io/SRecord/srecord.cpp \
+	io/SRecord/QSRecordStream.cpp \
         io/io.cpp \
         main.cpp
 
@@ -57,8 +61,8 @@ HEADERS += \
     ui/components/inputnumber.hpp \
     ui/components/list.hpp \
     io/memory_block.hpp \
-    io/srecord.hpp \
-    io/QSRecordStream.hpp \
+    io/SRecord/srecord.hpp \
+    io/SRecord/QSRecordStream.hpp \
     io/io.hpp
 
 include(FTXUI.pri)
