@@ -2,5 +2,5 @@
 
 namespace SRecordTests
 {
-    void Run();
+void Run();
 }

@@ -1,5 +1,5 @@
 #include "test_srecord.hpp"
-#include "QSRecordStream.hpp"
+#include "io/SRecord/QSRecordStream.hpp"
 #include <QIODevice>
 #include <QByteArray>
 #include <QBuffer>

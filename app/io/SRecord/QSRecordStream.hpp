@@ -13,7 +13,7 @@ public:
     enum Status { Ok };
 
     explicit QSRecordStream(QIODevice *device);
-    virtual ~QSRecordStream();
+    ~QSRecordStream();
 
     QIODevice *device() const { return _device; }
 

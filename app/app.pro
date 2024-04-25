@@ -32,6 +32,7 @@ SOURCES += \
         ui/components/list.cpp \
 	io/SRecord/srecord.cpp \
 	io/SRecord/QSRecordStream.cpp \
+        io/SimpleHex/QSimpleHexStream.cpp \
         io/io.cpp \
         main.cpp
 
@@ -63,6 +64,7 @@ HEADERS += \
     io/memory_block.hpp \
     io/SRecord/srecord.hpp \
     io/SRecord/QSRecordStream.hpp \
+    io/SimpleHex/QSimpleHexStream.hpp \
     io/io.hpp
 
 include(FTXUI.pri)
