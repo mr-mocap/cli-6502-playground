@@ -1,61 +1,9 @@
 #include "io/SimpleHex/QSimpleHexStream.hpp"
+#include "utilities/StringConversions.hpp"
 #include <QIODevice>
 #include <cctype>
 #include <string_view>
 
-
-static constexpr inline bool IsDecimalDigit(int digit)
-{
-    return (digit >= '0') && (digit <= '9');
-}
-
-static constexpr inline bool IsHexDigit(int digit)
-{
-    return (digit >= 'A') && (digit <= 'F');
-}
-
-static int HexDigitsBigEndianToDecimal(std::string_view hex_digits_in_ascii)
-{
-    int value = 0;
-
-    if ( hex_digits_in_ascii.empty() )
-        return -1;
-
-    for (char iCurrentHexDigit : hex_digits_in_ascii)
-    {
-        if ( IsDecimalDigit(iCurrentHexDigit) )
-            iCurrentHexDigit -= '0';
-        else if ( IsHexDigit(iCurrentHexDigit) )
-            iCurrentHexDigit = iCurrentHexDigit - 'A' + 10;
-        else
-            break;
-
-        value = (value << 4) | (iCurrentHexDigit & 0x0F);
-    }
-    return value;
-}
-
-static inline int Read8BitHexValue(std::string_view data)
-{
-    return HexDigitsBigEndianToDecimal( data );
-}
-
-static inline int Read16BitHexValue(std::string_view data)
-{
-    return HexDigitsBigEndianToDecimal( data );
-}
-
-static inline bool BeginsWith8BitHexValue(std::string_view data)
-{
-    return ( data.size() >= 2 ) && std::isxdigit( data[0] ) && std::isxdigit( data[1] );
-}
-
-static constexpr std::string_view EatWhiteSpace(std::string_view data)
-{
-    while ( !data.empty() && std::isblank( data.front() ) )
-        data.remove_prefix( 1 );
-    return data;
-}
 
 static OptionalMemoryBlock ReadSimpleHexLine(std::string_view data)
 {
@@ -78,7 +26,7 @@ static OptionalMemoryBlock ReadSimpleHexLine(std::string_view data)
 
     while ( !data.empty() )
     {
-        data = EatWhiteSpace( data );
+        data = EatLeadingWhiteSpace( data );
         if ( !BeginsWith8BitHexValue( data ) )
             break;
 

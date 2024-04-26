@@ -1,61 +1,10 @@
 #include "QSRecordStream.hpp"
+#include "utilities/StringConversions.hpp"
 #include <QIODevice>
 #include <cstdio>
 #include <algorithm>
 
 const int CharsPerByte = 2;
-
-static std::string_view TrimWhitespace(std::string_view str)
-{
-    while ( !str.empty() && std::isspace( str.front() ) )
-        str.remove_prefix( 1 );
-
-    while ( !str.empty() && std::isspace( str.back() ) )
-        str.remove_suffix( 1 );
-
-    return str;
-}
-
-static int HexDigitsBigEndianToDecimal(std::string_view hex_digits_in_ascii)
-{
-    int value = 0;
-
-    if ( hex_digits_in_ascii.empty() )
-        return -1;
-
-    for (char iCurrentHexDigit : hex_digits_in_ascii)
-    {
-        if ( std::isdigit(iCurrentHexDigit) )
-            iCurrentHexDigit -= '0';
-        else if ( std::isxdigit(iCurrentHexDigit) )
-            iCurrentHexDigit = iCurrentHexDigit - 'A' + 10;
-        else
-            return -1;
-
-        value = (value << 4) | (iCurrentHexDigit & 0x0F);
-    }
-    return value;
-}
-
-inline int Read8BitHexValue(std::string_view data)
-{
-    return HexDigitsBigEndianToDecimal( data );
-}
-
-inline int Read16BitHexValue(std::string_view data)
-{
-    return HexDigitsBigEndianToDecimal( data );
-}
-
-inline int Read24BitHexValue(std::string_view data)
-{
-    return HexDigitsBigEndianToDecimal( data );
-}
-
-inline int Read32BitHexValue(std::string_view data)
-{
-    return HexDigitsBigEndianToDecimal( data );
-}
 
 static Bytes ReadData(std::string_view data)
 {

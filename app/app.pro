@@ -15,6 +15,7 @@ INCLUDEPATH += $$APPDIR
 SOURCES += \
         apputils.cpp \
         cliplaygroundapplication.cpp \
+        utilities/StringConversions.cpp \
         emulator/bus.cpp \
         emulator/computer.cpp \
         emulator/disassembly.cpp \
@@ -44,6 +45,7 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 HEADERS += \
     apputils.hpp \
     cliplaygroundapplication.h \
+    utilities/StringConversions.hpp \
     emulator/bus.hpp \
     emulator/computer.hpp \
     emulator/disassembly.hpp \

@@ -13,6 +13,7 @@ INCLUDEPATH += $$APPDIR
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
+        $$APPDIR/utilities/StringConversions.cpp \
         $$APPDIR/io/SRecord/QSRecordStream.cpp \
         $$APPDIR/io/SRecord/srecord.cpp \
         $$APPDIR/io/SimpleHex/QSimpleHexStream.cpp \
@@ -26,6 +27,7 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
 
 HEADERS += \
+        $$APPDIR/utilities/StringConversions.cpp \
         $$APPDIR/io/memory_block.hpp \
         $$APPDIR/io/SRecord/srecord.hpp \
         $$APPDIR/io/SRecord/QSRecordStream.hpp \
