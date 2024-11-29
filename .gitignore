@@ -1,7 +1,17 @@
-*.pro.user
 .vscode/*
+
+# Global
 Makefile
+*.pro.user
 .qmake.stash
 *.o
 moc_*.cpp
 moc_*.h
+
+# Project
+
+# app
+app/app
+
+# testing
+testing/testing
