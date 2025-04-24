@@ -5,6 +5,7 @@
 #include <algorithm>
 
 #include "ftxui/component/component.hpp"
+#include "ftxui/component/event.hpp"
 #include "ftxui/dom/elements.hpp"
 
 using namespace ftxui;
@@ -145,7 +146,7 @@ public:
     void toggleSingleDigitEditMode() { *option_->single_digit_edit_mode = !*option_->single_digit_edit_mode; }
 
     // Component implementation:
-    Element Render() override
+    Element OnRender() override
     {
         bool is_focused = Focused();
         std::string v = GenerateStringValue( *option_->base, BasePropertiesByte.at(*option_->base).max_digits, *option_->data );
@@ -321,7 +322,7 @@ public:
     void toggleSingleDigitEditMode() { *option_->single_digit_edit_mode = !*option_->single_digit_edit_mode; }
 
     // Component implementation:
-    Element Render() override
+    Element OnRender() override
     {
         bool        is_focused = Focused();
         std::string v = GenerateStringValue( *option_->base, BasePropertiesWord.at(*option_->base).max_digits, *option_->data );
@@ -481,7 +482,7 @@ public:
     {
     }
 
-    Element Render() override
+    Element OnRender() override
     {
         if ( our_mask_ == 0 )
             return vbox( _generateWidgets() | reflect(box_) ); // First one

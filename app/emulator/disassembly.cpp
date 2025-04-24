@@ -48,7 +48,7 @@ public:
                                 });
     }
 
-    Element Render() override
+    Element OnRender() override
     {
         // "$XXXX: NOP #$XXXX [$XXXX]"
         const int format_length = 25;

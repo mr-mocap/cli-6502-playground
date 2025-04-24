@@ -64,6 +64,8 @@ void QSimpleHexStream::write(const MemoryBlock &block)
 {
     Q_ASSERT( device() );
     Q_ASSERT( device()->isOpen() );
+    
+    Q_UNUSED( block );
 }
 
 OptionalMemoryBlock QSimpleHexStream::read()

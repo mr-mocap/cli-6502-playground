@@ -128,7 +128,6 @@ OptionalProgram ReadS19RecordsFrom(QIODevice *device)
               });
 
     // Look for records S0, S1, S5 (optional), S9
-    auto s0 = FindSRecordOfType(records.value(), 0);
     auto s0_count = CountSRecordsOfType(records.value(), 0);
 
     if (s0_count != 1)

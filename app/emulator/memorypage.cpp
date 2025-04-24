@@ -1,5 +1,6 @@
 #include "memorypage.hpp"
 #include "ftxui/component/component.hpp"
+#include "ftxui/component/event.hpp"
 #include "pageview.hpp"
 #include <utility>
 
@@ -50,7 +51,7 @@ class MemoryPageComponent : public ComponentBase
 public:
     MemoryPageComponent(Ref<MemoryPageOption> option);
 
-    Element Render() override;
+    Element OnRender() override;
 
     bool OnEvent(Event event) override;
 
@@ -86,7 +87,7 @@ MemoryPageComponent::MemoryPageComponent(Ref<MemoryPageOption> option)
 {
 }
 
-Element MemoryPageComponent::Render()
+Element MemoryPageComponent::OnRender()
 {
     if ( Focused() != _was_focused )
         OnFocusChanged( Focused() );

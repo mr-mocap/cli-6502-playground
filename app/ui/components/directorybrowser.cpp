@@ -71,7 +71,7 @@ public:
     }
 
     // Component implementation:
-    Element Render() override
+    Element OnRender() override
     {
         return window( text("Load File") | hcenter,
                        vbox({

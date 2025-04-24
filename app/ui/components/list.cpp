@@ -1,4 +1,5 @@
 #include "list.hpp"
+#include <ftxui/component/event.hpp>
 #include <ftxui/dom/elements.hpp>
 
 using namespace ftxui;
@@ -25,7 +26,7 @@ public:
     {
     }
 
-    Element Render() override
+    Element OnRender() override
     {
         return vbox( generateItemElements() ) | vscroll_indicator | yframe | reflect(box_);
     }
@@ -177,6 +178,7 @@ protected:
               *selected_ == i,
               is_selected,
               is_focused,
+              i
           };
           auto element =
               (option_->transform ? option_->transform
