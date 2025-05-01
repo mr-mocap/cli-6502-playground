@@ -10,7 +10,7 @@ set path+=FTXUI/include/**
 
 let &cdpath = &path
 
-set tags+=./FTXUI.tags
+set tags+=FTXUI.tags
 
 " Add a local .vim directory for adding project-level filetype
 " behavior.
